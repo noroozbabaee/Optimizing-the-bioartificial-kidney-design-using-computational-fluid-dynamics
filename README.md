@@ -233,7 +233,9 @@ OAT1 is the clearance bottleneck only where clearance still rises with \(V_{\max
 python src/oat1_comsol_export_analysis.py
 ```
 
-COMSOL boundary-feature template: `comsol/apply_oat1_surface_flux.java`.
+Full COMSOL 6.3 Model Java (open with File → Open): `comsol/BAK_IO_OAT1_SurfaceFlux.java`.  
+Patch for an existing thesis `.mph`: `comsol/apply_oat1_surface_flux.java`.  
+Setup notes: `comsol/README.md`.
 
 ---
 
