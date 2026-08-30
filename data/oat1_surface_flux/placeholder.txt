@@ -1,0 +1,15 @@
+Place COMSOL line-integration exports for the surface-OAT1 bottleneck test here.
+
+For each areal Vmax_A (mol/(m^2*s)), export three tables:
+
+  flux_BM_VmaxA_<value>.txt
+  flux_OAT1_VmaxA_<value>.txt
+  flux_CD_VmaxA_<value>.txt
+
+Example: flux_BM_VmaxA_1e-7.txt
+
+Each file should be a COMSOL table with a % header and two columns:
+  Time (min), Normal total flux (mol/s)
+
+Then run:
+  python src/oat1_comsol_export_analysis.py
