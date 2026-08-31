@@ -1,5 +1,7 @@
 # COMSOL models (surface OAT1)
 
+**Full student guide (equations, parameters, issues, pipeline):** [`../SURFACE_OAT1_PIPELINE_README.md`](../SURFACE_OAT1_PIPELINE_README.md)
+
 **Start here on the university server:** [`RUN_ON_UNIVERSITY_COMSOL.md`](RUN_ON_UNIVERSITY_COMSOL.md)
 
 These Java files are COMSOL 6.3 Model Java. Open with **File → Open** (file type Java). Binary `.mph` files are not in this repository.

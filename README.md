@@ -11,6 +11,11 @@
 
 ¹ Ghent University  
 ² Maastricht University
+
+> **Student / pipeline guide (equations, parameters, diagnosed issues, COMSOL steps):**  
+> **[`SURFACE_OAT1_PIPELINE_README.md`](SURFACE_OAT1_PIPELINE_README.md)**  
+> Short university COMSOL run card: [`comsol/RUN_ON_UNIVERSITY_COMSOL.md`](comsol/RUN_ON_UNIVERSITY_COMSOL.md)
+
 ## Project Overview
 
 This project investigates the transport and clearance of the protein-bound uremic toxin (PBUT) indoxyl sulfate (IS) in bioartificial kidney hollow-fiber systems using computational fluid dynamics (CFD) simulations in COMSOL Multiphysics.
