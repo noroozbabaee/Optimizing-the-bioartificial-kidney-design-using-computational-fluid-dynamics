@@ -36,6 +36,7 @@ public class BAK_IO {
     transportCell(model);
     transportDialysate(model);
     oat1AndApicalCoupling(model);
+    coupleFlowAndTransport(model);
     mesh(model);
     studies(model);
     results(model);
@@ -250,7 +251,7 @@ public class BAK_IO {
     model.component("comp1").physics("tds").field("concentration").field("is");
     model.component("comp1").physics("tds").field("concentration").component(1, "is");
 
-    model.component("comp1").physics("tds").feature("cdm1").set("minput_velocity_src", "root.comp1.u");
+    // COMSOL 6.4: velocity via Multiphysics ReactingFlowDilutedSpecies
     model.component("comp1").physics("tds").feature("cdm1").setIndex("D_c", "D_is", 0);
 
     model.component("comp1").physics("tds").create("cdm_mem", "ConvectionDiffusion", 2);
@@ -300,7 +301,6 @@ public class BAK_IO {
     model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds3").field("concentration").field("isd");
     model.component("comp1").physics("tds3").field("concentration").component(1, "isd");
-    model.component("comp1").physics("tds3").feature("cdm1").set("minput_velocity_src", "root.comp1.u2");
     model.component("comp1").physics("tds3").feature("cdm1").setIndex("D_c", "D_is", 0);
     model.component("comp1").physics("tds3").feature("init1").set("isd", "0");
 
@@ -344,6 +344,22 @@ public class BAK_IO {
         .label("Apical: inward to dialysate");
     model.component("comp1").physics("tds3").feature("ap_dial").selection().named("bnd_cd");
     model.component("comp1").physics("tds3").feature("ap_dial").setIndex("N0", "J_apical", 0);
+  }
+
+
+  private static void coupleFlowAndTransport(Model model) {
+    // Reacting Flow, Diluted Species: sync Laminar Flow velocity into TDS (COMSOL 6.4).
+    model.component("comp1").multiphysics().create("rfd_blood", "ReactingFlowDilutedSpecies", 2);
+    model.component("comp1").multiphysics("rfd_blood").label("Flow-transport blood");
+    model.component("comp1").multiphysics("rfd_blood").selection().named("dom_blood");
+    model.component("comp1").multiphysics("rfd_blood").set("FluidFlow", "spf");
+    model.component("comp1").multiphysics("rfd_blood").set("DilutedSpecies", "tds");
+
+    model.component("comp1").multiphysics().create("rfd_dial", "ReactingFlowDilutedSpecies", 2);
+    model.component("comp1").multiphysics("rfd_dial").label("Flow-transport dialysate");
+    model.component("comp1").multiphysics("rfd_dial").selection().named("dom_dial");
+    model.component("comp1").multiphysics("rfd_dial").set("FluidFlow", "spf2");
+    model.component("comp1").multiphysics("rfd_dial").set("DilutedSpecies", "tds3");
   }
 
   private static void mesh(Model model) {
