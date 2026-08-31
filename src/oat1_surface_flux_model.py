@@ -332,11 +332,12 @@ def main() -> None:
     print(f"  Da at equivalent    = {damkohler(VMAX_A_EQUIV):.4e}")
 
     # Sweep from well below membrane capacity to well above it
-    vmax_values = np.logspace(-9, -4, 25)
+    vmax_values = np.logspace(-9, -3, 41)
 
-    # Apical not limiting (10x OAT1): tests whether OAT1 vs membrane controls CL
+    sweeps = {}
     rows_fast_apical = sweep_vmax(vmax_values, apical_ratio=10.0)
     write_csv(DATA_DIR / "sweep_vmaxA_apical_fast.csv", rows_fast_apical)
+    sweeps["apical_fast"] = rows_fast_apical
     plot_clearance_and_fluxes(
         rows_fast_apical,
         "Apical efflux not limiting ($V_{max}^{ap}=10\\,V_{max}^{A}$)",
@@ -347,6 +348,7 @@ def main() -> None:
 
     rows_equal_apical = sweep_vmax(vmax_values, apical_ratio=1.0)
     write_csv(DATA_DIR / "sweep_vmaxA_apical_equal.csv", rows_equal_apical)
+    sweeps["apical_equal"] = rows_equal_apical
     plot_clearance_and_fluxes(
         rows_equal_apical,
         "Matched apical capacity ($V_{max}^{ap}=V_{max}^{A}$)",
@@ -356,6 +358,7 @@ def main() -> None:
 
     rows_slow_apical = sweep_vmax(vmax_values, apical_ratio=0.1)
     write_csv(DATA_DIR / "sweep_vmaxA_apical_slow.csv", rows_slow_apical)
+    sweeps["apical_slow"] = rows_slow_apical
     plot_clearance_and_fluxes(
         rows_slow_apical,
         "Apical bottleneck ($V_{max}^{ap}=0.1\\,V_{max}^{A}$)",
@@ -364,7 +367,7 @@ def main() -> None:
     print_summary(rows_slow_apical[::4], "Apical 0.1x OAT1")
 
     eps_values = np.linspace(0.1, 0.9, 17)
-    vmax_map = np.logspace(-9, -4, 21)
+    vmax_map = np.logspace(-9, -3, 25)
     _, _, cl_map = sweep_membrane_map(vmax_map, eps_values, apical_ratio=10.0)
     plot_membrane_map(vmax_map, eps_values, cl_map, "clearance_map_vmaxA_vs_porosity")
 
@@ -372,8 +375,18 @@ def main() -> None:
     np.savetxt(DATA_DIR / "map_eps.txt", eps_values)
     np.savetxt(DATA_DIR / "map_clearance_uL_min_cm2.txt", cl_map)
 
+    from oat1_data_io import convert_all_comsol_exports, save_all_model_data
+
+    paper_dir = save_all_model_data(
+        sweeps, vmax_map, eps_values, cl_map, map_apical_ratio=10.0
+    )
+    n_comsol = convert_all_comsol_exports(DATA_DIR)
     print(f"\nWrote figures to {FIG_DIR}")
     print(f"Wrote tables to {DATA_DIR}")
+    print(f"Wrote paper-ready data to {paper_dir}")
+    if n_comsol:
+        print(f"Converted {len(n_comsol)} COMSOL flux tables")
+    print("Paper figures: python src/paper_figures_oat1.py")
 
 
 if __name__ == "__main__":

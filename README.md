@@ -223,15 +223,21 @@ The 1D radial chain that implements this test (inside-out geometry, thesis diffu
 
 ```text
 python src/oat1_surface_flux_model.py
+python src/paper_figures_oat1.py
 ```
 
-Figures are written to `figures/oat1_bottleneck/`. Tables go to `data/oat1_surface_flux/`.
+Saved tables (for Origin/Excel/R and paper plots): `data/oat1_surface_flux/paper/`  
+Journal figures (PDF + 600 dpi PNG): `figures/paper_oat1/`  
+Captions: `figures/paper_oat1/figure_captions.txt`
 
-OAT1 is the clearance bottleneck only where clearance still rises with \(V_{\max}^{A}\) (\(Da\ll 1\)). A plateau means the **membrane** (or apical efflux) is limiting. After corresponding COMSOL exports exist, run:
+COMSOL time-flux exports placed as `data/oat1_surface_flux/flux_*_VmaxA_*.txt` are converted by the model script, or run:
 
 ```text
+python src/oat1_data_io.py
 python src/oat1_comsol_export_analysis.py
 ```
+
+OAT1 is the clearance bottleneck only where clearance still rises with \(V_{\max}^{A}\) (\(Da\ll 1\)). A plateau means the **membrane** (or apical efflux) is limiting.
 
 Full COMSOL 6.3 Model Java (open with File → Open): `comsol/BAK_IO_OAT1_SurfaceFlux.java`.  
 Patch for an existing thesis `.mph`: `comsol/apply_oat1_surface_flux.java`.  
@@ -378,6 +384,7 @@ https://ugentbe-my.sharepoint.com/:u:/r/personal/floriene_holvoet_ugent_be/Docum
 | `Figure 9.25` | Total multifiber clearance under countercurrent conditions | `src/multifiber_clearance.py` |
 | `Figure 9.26` | Individual fiber clearance in multifiber configurations | `src/multifiber_clearance.py` |
 | Surface OAT1 | Clearance and BM / OAT1 / CD fluxes vs areal \(V_{\max}\) | `src/oat1_surface_flux_model.py` |
+| Surface OAT1 | Journal figures (PDF/PNG) and captions | `src/paper_figures_oat1.py` |
 | Surface OAT1 | COMSOL export bottleneck analysis | `src/oat1_comsol_export_analysis.py` |
 
 
