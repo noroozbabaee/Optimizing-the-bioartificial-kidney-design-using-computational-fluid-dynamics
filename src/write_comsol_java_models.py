@@ -226,10 +226,8 @@ public class {class_name} {{
   }}
 
   public static void main(String[] args) {{
-    Model model = run();
-    if (args != null && args.length > 0) {{
-      model.save(args[0]);
-    }}
+    // File > Open of the .class calls run(). No save here (IOException on COMSOL 6.4).
+    run();
   }}
 
   private static void parameters(Model model) {{
