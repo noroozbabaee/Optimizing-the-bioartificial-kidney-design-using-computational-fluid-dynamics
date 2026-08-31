@@ -249,16 +249,15 @@ public class BAK_OI {
     model.component("comp1").physics("tds").selection().named("dom_blood_mem");
     model.component("comp1").physics("tds").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds").field("concentration").field("is");
-    model.component("comp1").physics("tds").field("concentration").component(1, "is");
+    model.component("comp1").physics("tds").field("concentration").component(new String[]{"is"});
+    // Diffusivity D_is / D_mem: set in GUI under each TDS Fluid node if defaults are wrong.
+    // (COMSOL 6.4 rejected setIndex("D_c", ...) used in older Model Java.)
 
-    // COMSOL 6.4: velocity via Multiphysics ReactingFlowDilutedSpecies
-    model.component("comp1").physics("tds").feature("cdm1").setIndex("D_c", "D_is", 0);
 
     model.component("comp1").physics("tds").create("cdm_mem", "ConvectionDiffusion", 2);
     model.component("comp1").physics("tds").feature("cdm_mem").label("Membrane diffusion only");
     model.component("comp1").physics("tds").feature("cdm_mem").selection().named("dom_mem");
     model.component("comp1").physics("tds").feature("cdm_mem").set("Convection", false);
-    model.component("comp1").physics("tds").feature("cdm_mem").setIndex("D_c", "D_mem", 0);
 
     model.component("comp1").physics("tds").feature("init1").set("is", "C_in");
 
@@ -283,9 +282,8 @@ public class BAK_OI {
     model.component("comp1").physics("tds2").selection().named("dom_cell");
     model.component("comp1").physics("tds2").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds2").field("concentration").field("isc");
-    model.component("comp1").physics("tds2").field("concentration").component(1, "isc");
+    model.component("comp1").physics("tds2").field("concentration").component(new String[]{"isc"});
     model.component("comp1").physics("tds2").feature("cdm1").set("Convection", false);
-    model.component("comp1").physics("tds2").feature("cdm1").setIndex("D_c", "D_is", 0);
     model.component("comp1").physics("tds2").feature("init1").set("isc", "0");
 
     model.component("comp1").physics("tds2").create("nflx_c0", "NoFlux", 1);
@@ -300,8 +298,7 @@ public class BAK_OI {
     model.component("comp1").physics("tds3").selection().named("dom_dial");
     model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds3").field("concentration").field("isd");
-    model.component("comp1").physics("tds3").field("concentration").component(1, "isd");
-    model.component("comp1").physics("tds3").feature("cdm1").setIndex("D_c", "D_is", 0);
+    model.component("comp1").physics("tds3").field("concentration").component(new String[]{"isd"});
     model.component("comp1").physics("tds3").feature("init1").set("isd", "0");
 
     model.component("comp1").physics("tds3").create("conc_d", "Concentration", 1);
