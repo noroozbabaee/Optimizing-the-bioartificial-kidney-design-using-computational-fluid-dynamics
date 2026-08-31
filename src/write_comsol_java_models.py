@@ -152,19 +152,27 @@ def java_for(geom: FiberGeometry) -> str:
     return f'''/*
  * {class_name}.java
  *
- * COMSOL Multiphysics 6.3 Model Java - OPEN WITH: File -> Open
+ * COMSOL Multiphysics 6.4 Model Java - OPEN WITH: File -> Open *.class
+ *
+ * COMSOL 6.4 API NOTES (do not reintroduce these)
+ * -----------------------------------------------
+ *   NEVER setIndex("D_c", ...)     -> use setIndex("Dc", ...)
+ *   NEVER set("minput_velocity_src", ...)
+ *   NEVER set("FluidFlow"/"DilutedSpecies") on ReactingFlowDilutedSpecies
+ *   main() must be only run(); no model.save / System.exit
  *
  * PLAN (read this before pressing Compute)
  * ---------------------------------------
  * 1. This file is ONE of three twins that share the SAME physics and
  *    DIFFERENT geometry. Physics is never volumetric Michaelis-Menten.
- * 2. Run IO first (this family). Confirm cell concentration isc rises
- *    and molar flow at OAT1 is into the cell. If isc falls, flip the
- *    sign of N0 on oat1_mem / oat1_cell (see CHECK SIGNS below).
- * 3. Export tables Flux BM, Flux OAT1, Flux CD vs time into
+ * 2. After open: check Multiphysics rfd_blood / rfd_dial couple the
+ *    correct Laminar Flow + TDS pair (see coupleFlowAndTransport).
+ * 3. Run IO first. Confirm cell concentration isc rises. If isc falls,
+ *    flip N0 on oat1_mem / oat1_cell together (CHECK SIGNS below).
+ * 4. Export tables Flux BM, Flux OAT1, Flux CD vs time into
  *    data/comsol_surface_oat1/{geom.name}/
- * 4. Repeat for the other two Java files, same Vmax_A, Q_b, Q_d, C_in.
- * 5. python3 src/comsol_io_oi_comparison.py
+ * 5. Repeat for the other two Java files, same Vmax_A, Q_b, Q_d, C_in.
+ * 6. python3 src/comsol_io_oi_comparison.py
  *
  * Geometry: {geom.name}  ({geom.role})
  * Material order from the axis: {stack}
@@ -397,12 +405,17 @@ public class {class_name} {{
     model.component("comp1").physics("tds").field("concentration").field("is");
     model.component("comp1").physics("tds").field("concentration").component(new String[]{{"is"}});
 
-    // COMSOL 6.4: do not use minput_velocity_src (unknown). Couple via Multiphysics.
+    // COMSOL 6.4 Fluid diffusion property is "Dc" (NOT legacy "D_c").
+    // Do NOT set minput_velocity_src (unknown on 6.4). Velocity comes from Multiphysics.
+    model.component("comp1").physics("tds").feature("cdm1").label("Blood Fluid (default)");
+    model.component("comp1").physics("tds").feature("cdm1").setIndex("Dc", "D_is", 0);
 
+    // Extra domain node on membrane (override diffusivity). Type id is still
+    // ConvectionDiffusion in Model Java (GUI label may say Fluid).
     model.component("comp1").physics("tds").create("cdm_mem", "ConvectionDiffusion", 2);
-    model.component("comp1").physics("tds").feature("cdm_mem").label("Membrane diffusion only");
+    model.component("comp1").physics("tds").feature("cdm_mem").label("Membrane diffusion");
     model.component("comp1").physics("tds").feature("cdm_mem").selection().named("dom_mem");
-    model.component("comp1").physics("tds").feature("cdm_mem").set("Convection", false);
+    model.component("comp1").physics("tds").feature("cdm_mem").setIndex("Dc", "D_mem", 0);
 
     model.component("comp1").physics("tds").feature("init1").set("is", "C_in");
 
@@ -428,7 +441,7 @@ public class {class_name} {{
     model.component("comp1").physics("tds2").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds2").field("concentration").field("isc");
     model.component("comp1").physics("tds2").field("concentration").component(new String[]{{"isc"}});
-    model.component("comp1").physics("tds2").feature("cdm1").set("Convection", false);
+    model.component("comp1").physics("tds2").feature("cdm1").setIndex("Dc", "D_is", 0);
     model.component("comp1").physics("tds2").feature("init1").set("isc", "0");
 
     model.component("comp1").physics("tds2").create("nflx_c0", "NoFlux", 1);
@@ -444,6 +457,7 @@ public class {class_name} {{
     model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds3").field("concentration").field("isd");
     model.component("comp1").physics("tds3").field("concentration").component(new String[]{{"isd"}});
+    model.component("comp1").physics("tds3").feature("cdm1").setIndex("Dc", "D_is", 0);
     model.component("comp1").physics("tds3").feature("init1").set("isd", "0");
 
     model.component("comp1").physics("tds3").create("conc_d", "Concentration", 1);
@@ -490,18 +504,21 @@ public class {class_name} {{
 
 
   private static void coupleFlowAndTransport(Model model) {{
-    // Reacting Flow, Diluted Species: sync Laminar Flow velocity into TDS (COMSOL 6.4).
+    // Reacting Flow, Diluted Species (COMSOL 6.4).
+    // Create couplings + domain selections only.
+    // Do NOT call .set("FluidFlow"...)/.set("DilutedSpecies"...) — those
+    // property keys are version-dependent and caused "Unknown parameter" on open.
+    // After File>Open: click each Multiphysics node and pick:
+    //   rfd_blood -> Fluid flow = Laminar Flow - blood, Species = TDS blood+membrane
+    //   rfd_dial  -> Fluid flow = Laminar Flow - dialysate, Species = TDS dialysate
+    // (Often auto-selected when only one sensible pair intersects the selection.)
     model.component("comp1").multiphysics().create("rfd_blood", "ReactingFlowDilutedSpecies", 2);
     model.component("comp1").multiphysics("rfd_blood").label("Flow-transport blood");
     model.component("comp1").multiphysics("rfd_blood").selection().named("dom_blood");
-    model.component("comp1").multiphysics("rfd_blood").set("FluidFlow", "spf");
-    model.component("comp1").multiphysics("rfd_blood").set("DilutedSpecies", "tds");
 
     model.component("comp1").multiphysics().create("rfd_dial", "ReactingFlowDilutedSpecies", 2);
     model.component("comp1").multiphysics("rfd_dial").label("Flow-transport dialysate");
     model.component("comp1").multiphysics("rfd_dial").selection().named("dom_dial");
-    model.component("comp1").multiphysics("rfd_dial").set("FluidFlow", "spf2");
-    model.component("comp1").multiphysics("rfd_dial").set("DilutedSpecies", "tds3");
   }}
 
   private static void mesh(Model model) {{

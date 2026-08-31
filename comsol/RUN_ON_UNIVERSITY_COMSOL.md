@@ -1,18 +1,19 @@
 # How to run the new BAK models on the university COMSOL server
 
-> **COMSOL 6.4 users:** your File-Open dialog lists `*.class`, not `*.java`.
+> **COMSOL 6.4:** File-Open lists `*.class`, not `*.java`.
 > Follow **`OPEN_ON_COMSOL64.txt`** and run **`compile_models.bat`** first.
 > Open `BAK_IO.class` (short name), not old `RM_*.mph` files.
+> Always copy the **latest** `BAK_*.java` from git — Desktop copies go stale.
 
 This is the whole plan, in order. Do not skip the sign check in step 3.
 
 ## What you are comparing
 
-| Model | Java file | What it is |
+| Model | Java / class | What it is |
 |---|---|---|
-| **IO** | `BAK_IO_OAT1_SurfaceFlux.java` | Thesis inside-out. Blood in the lumen. **Reference.** |
-| **OI original** | `BAK_OI_OAT1_SurfaceFlux.java` | Thesis outside-in (layers inverted out to 1.8 mm). **Control only — unfair area and blood volume.** |
-| **OI fair** | `BAK_OI_fair_OAT1_SurfaceFlux.java` | Outside-in with the **same OAT1 area and same blood volume** as IO. **This is the fair pair.** |
+| **IO** | `BAK_IO` | Thesis inside-out. Blood in the lumen. **Reference.** |
+| **OI original** | `BAK_OI` | Thesis outside-in (layers inverted out to 1.8 mm). **Control only — unfair area and blood volume.** |
+| **OI fair** | `BAK_OI_fair` | Outside-in with the **same OAT1 area and same blood volume** as IO. **This is the fair pair.** |
 
 All three use the **same physics**:
 
@@ -43,31 +44,34 @@ The thesis “adjusted OI” is **not** used. It matched blood volume by making 
 
 Fair OI housing radius is **0.381 mm**, not 1.8 mm. That is required by matching blood volume at the same OAT1 radius. Blood-side *hydrodynamics* (gap, shear) are **not** matched — report that.
 
-## On the remote server
+## On the remote server (COMSOL 6.4)
 
-### 1. Copy this folder
+### 1. Copy + compile
 
-Copy the whole `comsol/` directory (the three `BAK_*.java` files) onto the machine that has COMSOL 6.3.
+Copy `comsol/BAK_IO.java`, `BAK_OI.java`, `BAK_OI_fair.java`, and `compile_models.bat` into a short folder (e.g. `Desktop\BAK`). Delete old `.class` files, then run `compile_models.bat`.
 
 ### 2. Open IO first
 
-1. COMSOL 6.3 → **File → Open**
-2. File type: **Java**
-3. Open `BAK_IO_OAT1_SurfaceFlux.java`
-4. Click each **Box** selection (blood inlet, OAT1, apical, …) and check the highlighted edges. If domain IDs are wrong, the Explicit domain selections are labeled Blood / Membrane / Cell / Dialysate — fix those first.
-5. If **LaminarInflow** is rejected by this COMSOL build: Inlet → Velocity → average `U_avg_b` / `U_avg_d`.
-6. If the second velocity field is not `u2`: Dialysate TDS → convection velocity → **Laminar Flow 2**.
+1. COMSOL 6.4 → **File → Open** → type **Compiled Model File (*.class)** → `BAK_IO.class`
+2. Success = Model Builder shows **Component 1** (Geometry, Physics, Mesh, Studies). Save As `BAK_IO.mph`.
+3. Under **Multiphysics**, confirm:
+   - Flow-transport blood → Laminar Flow - blood + TDS blood+membrane
+   - Flow-transport dialysate → Laminar Flow - dialysate + TDS dialysate
+4. Click a few **Box** selections (blood inlet, OAT1, apical) and check highlighted edges.
+
+**COMSOL 6.4 API already fixed in these files** (do not reintroduce):
+`D_c` → use `Dc`; no `minput_velocity_src`; no `FluidFlow`/`DilutedSpecies` `.set()` on multiphysics; `main()` = `run()` only.
 
 ### 3. Sign check (5 minutes, do not skip)
 
-Study 1 → Compute.
+Mesh → Build All. Study 1 → Compute.
 
 Open plot **IS cell (isc)**. After a few minutes `isc` must be **positive and rising**.
 
 - If `isc` stays 0: OAT1 flux is not connected (wrong boundary).
 - If `isc` goes negative or the cell empties: flip **both** OAT1 `N0` signs together (`-J_OAT1` ↔ `J_OAT1` on membrane and cell). Keep them equal-and-opposite.
 
-Then open the same Java for **OI original** and **OI fair** and repeat the sign check once per geometry.
+Then open `BAK_OI.class` and `BAK_OI_fair.class` and repeat the sign check once per geometry.
 
 ### 4. Production run
 

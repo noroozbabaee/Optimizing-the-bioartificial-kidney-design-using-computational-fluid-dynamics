@@ -1,18 +1,58 @@
 /*
  * BAK_IO.java
  *
- * COMSOL 6.3 / 6.4 Model Java for surface OAT1 BAK fiber.
+ * COMSOL Multiphysics 6.4 Model Java - OPEN WITH: File -> Open *.class
  *
- * UNIVERSITY COMSOL 6.4 (your Open dialog lists *.class, not *.java):
- *   1. Copy this file + compile_models.bat into Documents\\COMSOL\\Batch
- *   2. Double-click compile_models.bat  (creates BAK_IO.class)
- *   3. COMSOL -> File -> Open -> Compiled Model File for Java (*.class)
- *   4. Open BAK_IO.class
- *   5. File -> Save As -> BAK_IO.mph
- *   6. Right-click Mesh -> Build All, then Study 1 -> Compute
- *   7. Check plot isc rises. If not, flip both OAT1 N0 signs together.
+ * COMSOL 6.4 API NOTES (do not reintroduce these)
+ * -----------------------------------------------
+ *   NEVER setIndex("D_c", ...)     -> use setIndex("Dc", ...)
+ *   NEVER set("minput_velocity_src", ...)
+ *   NEVER set("FluidFlow"/"DilutedSpecies") on ReactingFlowDilutedSpecies
+ *   main() must be only run(); no model.save / System.exit
  *
- * Do not open damaged RM_*.mph files from other folders.
+ * PLAN (read this before pressing Compute)
+ * ---------------------------------------
+ * 1. This file is ONE of three twins that share the SAME physics and
+ *    DIFFERENT geometry. Physics is never volumetric Michaelis-Menten.
+ * 2. After open: check Multiphysics rfd_blood / rfd_dial couple the
+ *    correct Laminar Flow + TDS pair (see coupleFlowAndTransport).
+ * 3. Run IO first. Confirm cell concentration isc rises. If isc falls,
+ *    flip N0 on oat1_mem / oat1_cell together (CHECK SIGNS below).
+ * 4. Export tables Flux BM, Flux OAT1, Flux CD vs time into
+ *    data/comsol_surface_oat1/IO/
+ * 5. Repeat for the other two Java files, same Vmax_A, Q_b, Q_d, C_in.
+ * 6. python3 src/comsol_io_oi_comparison.py
+ *
+ * Geometry: IO  (reference (thesis inside-out))
+ * Material order from the axis: blood | membrane | cell | dialysate
+ *   R_apical (cell-dialysate) = 0.270000 mm
+ *   R_OAT1   (membrane-cell)  = 0.250000 mm
+ *   R_BM     (blood-membrane) = 0.150000 mm
+ *   R_housing                 = 1.800000 mm
+ *   A_OAT1 = 2*pi*R_OAT1*L    = 31.4159 mm^2
+ *   V_blood                   = 1.4137 mm^3
+ *
+ * WHY THREE TRANSPORT INTERFACES
+ * ------------------------------
+ * One continuous concentration cannot represent OAT1: the transporter
+ * sees a different concentration on the membrane side (extracellular)
+ * and the cell side (intracellular). We therefore use three TDS fields:
+ *   tds  (is)  blood + polymer membrane   - passive continuity at BM
+ *   tds2 (isc) cell layer only
+ *   tds3 (isd) dialysate only
+ * Coupled by equal-and-opposite FLUXES (mass is transferred, not created):
+ *   J_OAT1   = Vmax_A * ( is/(Km+is) - isc/(Km+isc) )     reversible OAT1
+ *   J_apical = Vmax_ap * isc / (Km_ap + isc)              irreversible exit
+ *
+ * CHECK SIGNS (after the first 5 min of a test run)
+ * -------------------------------------------------
+ * isc in the cell must increase from 0. Molar flow 2*pi*r*J_OAT1 > 0
+ * means blood -> dialysate. If isc decreases, set N0 to the opposite sign
+ * on both members of the pair (keep them equal-and-opposite).
+ *
+ * Compile / batch (optional):
+ *   comsol compile BAK_IO.java
+ *   comsol batch -inputfile BAK_IO.class -outputfile BAK_IO.mph
  */
 
 import com.comsol.model.Model;
@@ -250,14 +290,18 @@ public class BAK_IO {
     model.component("comp1").physics("tds").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds").field("concentration").field("is");
     model.component("comp1").physics("tds").field("concentration").component(new String[]{"is"});
-    // Diffusivity D_is / D_mem: set in GUI under each TDS Fluid node if defaults are wrong.
-    // (COMSOL 6.4 rejected setIndex("D_c", ...) used in older Model Java.)
 
+    // COMSOL 6.4 Fluid diffusion property is "Dc" (NOT legacy "D_c").
+    // Do NOT set minput_velocity_src (unknown on 6.4). Velocity comes from Multiphysics.
+    model.component("comp1").physics("tds").feature("cdm1").label("Blood Fluid (default)");
+    model.component("comp1").physics("tds").feature("cdm1").setIndex("Dc", "D_is", 0);
 
+    // Extra domain node on membrane (override diffusivity). Type id is still
+    // ConvectionDiffusion in Model Java (GUI label may say Fluid).
     model.component("comp1").physics("tds").create("cdm_mem", "ConvectionDiffusion", 2);
-    model.component("comp1").physics("tds").feature("cdm_mem").label("Membrane diffusion only");
+    model.component("comp1").physics("tds").feature("cdm_mem").label("Membrane diffusion");
     model.component("comp1").physics("tds").feature("cdm_mem").selection().named("dom_mem");
-    model.component("comp1").physics("tds").feature("cdm_mem").set("Convection", false);
+    model.component("comp1").physics("tds").feature("cdm_mem").setIndex("Dc", "D_mem", 0);
 
     model.component("comp1").physics("tds").feature("init1").set("is", "C_in");
 
@@ -283,7 +327,7 @@ public class BAK_IO {
     model.component("comp1").physics("tds2").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds2").field("concentration").field("isc");
     model.component("comp1").physics("tds2").field("concentration").component(new String[]{"isc"});
-    model.component("comp1").physics("tds2").feature("cdm1").set("Convection", false);
+    model.component("comp1").physics("tds2").feature("cdm1").setIndex("Dc", "D_is", 0);
     model.component("comp1").physics("tds2").feature("init1").set("isc", "0");
 
     model.component("comp1").physics("tds2").create("nflx_c0", "NoFlux", 1);
@@ -299,6 +343,7 @@ public class BAK_IO {
     model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds3").field("concentration").field("isd");
     model.component("comp1").physics("tds3").field("concentration").component(new String[]{"isd"});
+    model.component("comp1").physics("tds3").feature("cdm1").setIndex("Dc", "D_is", 0);
     model.component("comp1").physics("tds3").feature("init1").set("isd", "0");
 
     model.component("comp1").physics("tds3").create("conc_d", "Concentration", 1);
@@ -345,18 +390,21 @@ public class BAK_IO {
 
 
   private static void coupleFlowAndTransport(Model model) {
-    // Reacting Flow, Diluted Species: sync Laminar Flow velocity into TDS (COMSOL 6.4).
+    // Reacting Flow, Diluted Species (COMSOL 6.4).
+    // Create couplings + domain selections only.
+    // Do NOT call .set("FluidFlow"...)/.set("DilutedSpecies"...) — those
+    // property keys are version-dependent and caused "Unknown parameter" on open.
+    // After File>Open: click each Multiphysics node and pick:
+    //   rfd_blood -> Fluid flow = Laminar Flow - blood, Species = TDS blood+membrane
+    //   rfd_dial  -> Fluid flow = Laminar Flow - dialysate, Species = TDS dialysate
+    // (Often auto-selected when only one sensible pair intersects the selection.)
     model.component("comp1").multiphysics().create("rfd_blood", "ReactingFlowDilutedSpecies", 2);
     model.component("comp1").multiphysics("rfd_blood").label("Flow-transport blood");
     model.component("comp1").multiphysics("rfd_blood").selection().named("dom_blood");
-    model.component("comp1").multiphysics("rfd_blood").set("FluidFlow", "spf");
-    model.component("comp1").multiphysics("rfd_blood").set("DilutedSpecies", "tds");
 
     model.component("comp1").multiphysics().create("rfd_dial", "ReactingFlowDilutedSpecies", 2);
     model.component("comp1").multiphysics("rfd_dial").label("Flow-transport dialysate");
     model.component("comp1").multiphysics("rfd_dial").selection().named("dom_dial");
-    model.component("comp1").multiphysics("rfd_dial").set("FluidFlow", "spf2");
-    model.component("comp1").multiphysics("rfd_dial").set("DilutedSpecies", "tds3");
   }
 
   private static void mesh(Model model) {
