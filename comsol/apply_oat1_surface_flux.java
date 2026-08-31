@@ -6,6 +6,10 @@
  * Place OAT1 as a flux on the membrane-cell (basolateral) interface.
  * Place apical efflux as a flux on the cell-dialysate interface.
  *
+ * Prefer the complete models BAK_IO_OAT1_SurfaceFlux.java,
+ * BAK_OI_OAT1_SurfaceFlux.java, BAK_OI_fair_OAT1_SurfaceFlux.java.
+ * This file only patches an old thesis .mph.
+ *
  * Usage:
  *   1. Open the inside-out (or outside-in) .mph in COMSOL 6.3.
  *   2. File > Reset History, then File > Save As Model Method, or

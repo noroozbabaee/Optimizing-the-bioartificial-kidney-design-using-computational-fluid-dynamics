@@ -210,38 +210,29 @@ Additional simulations were performed with varying $V_{\max}$ values to evaluate
 
 A split cell-layer model was also investigated to distinguish between basolateral and apical transport behavior.
 
-## Surface OAT1 formulation (bottleneck test)
+## Surface OAT1 formulation and fair IO vs OI
 
-The original cell-domain Michaelis–Menten term smears OAT1 through the full epithelial thickness. A more realistic implementation keeps the polymer membrane as **one diffusion domain** and moves active transport to **surfaces**:
+The original cell-domain Michaelis–Menten term smears OAT1 through the full epithelial thickness. The corrected models keep the polymer membrane as **one diffusion domain** and move active transport to **surfaces**:
 
-1. Disable the volumetric reaction in the cell domain.
-2. OAT1 flux at the **membrane–cell (basolateral)** interface:
-   \(J_{\mathrm{OAT1}}=V_{\max}^{A}\,c_{\mathrm{mem}}/(K_m+c_{\mathrm{mem}})\), with \(V_{\max}^{A}\) in mol m\(^{-2}\) s\(^{-1}\).
-3. Apical efflux at the **cell–dialysate** interface (otherwise the cell fills and net clearance is not OAT1-limited).
+1. No volumetric reaction in the cell.
+2. Reversible OAT1 at the **membrane–cell** face (separate concentrations `is` and `isc`).
+3. Apical efflux at the **cell–dialysate** face.
 
-The 1D radial chain that implements this test (inside-out geometry, thesis diffusivities) is:
+**Run these on university COMSOL** (File → Open the Java file). Step-by-step: `comsol/RUN_ON_UNIVERSITY_COMSOL.md`.
 
-```text
-python src/oat1_surface_flux_model.py
-python src/paper_figures_oat1.py
-```
+| Java model | Role |
+|---|---|
+| `comsol/BAK_IO_OAT1_SurfaceFlux.java` | Inside-out reference |
+| `comsol/BAK_OI_OAT1_SurfaceFlux.java` | Thesis outside-in (control, unfair) |
+| `comsol/BAK_OI_fair_OAT1_SurfaceFlux.java` | Fair outside-in: same OAT1 area and blood volume as IO |
 
-Saved tables (for Origin/Excel/R and paper plots): `data/oat1_surface_flux/paper/`  
-Journal figures (PDF + 600 dpi PNG): `figures/paper_oat1/`  
-Captions: `figures/paper_oat1/figure_captions.txt`
-
-COMSOL time-flux exports placed as `data/oat1_surface_flux/flux_*_VmaxA_*.txt` are converted by the model script, or run:
+Export flux tables into `data/comsol_surface_oat1/<IO|OI_original|OI_fair>/`, then:
 
 ```text
-python src/oat1_data_io.py
-python src/oat1_comsol_export_analysis.py
+python3 src/comsol_io_oi_comparison.py
 ```
 
-OAT1 is the clearance bottleneck only where clearance still rises with \(V_{\max}^{A}\) (\(Da\ll 1\)). A plateau means the **membrane** (or apical efflux) is limiting.
-
-Full COMSOL 6.3 Model Java (open with File → Open): `comsol/BAK_IO_OAT1_SurfaceFlux.java`.  
-Patch for an existing thesis `.mph`: `comsol/apply_oat1_surface_flux.java`.  
-Setup notes: `comsol/README.md`.
+Geometry equations live in `src/bak_geometries.py`. A 1D radial diagnostic (IO only, not the fair comparison) is still `python3 src/oat1_surface_flux_model.py`.
 
 ---
 
@@ -383,9 +374,9 @@ https://ugentbe-my.sharepoint.com/:u:/r/personal/floriene_holvoet_ugent_be/Docum
 | `Figure 9.23` | Michaelis-Menten contribution ratio for `Vmax = 10^9` | `src/MM_transport_contribution.py` |
 | `Figure 9.25` | Total multifiber clearance under countercurrent conditions | `src/multifiber_clearance.py` |
 | `Figure 9.26` | Individual fiber clearance in multifiber configurations | `src/multifiber_clearance.py` |
-| Surface OAT1 | Clearance and BM / OAT1 / CD fluxes vs areal \(V_{\max}\) | `src/oat1_surface_flux_model.py` |
-| Surface OAT1 | Journal figures (PDF/PNG) and captions | `src/paper_figures_oat1.py` |
-| Surface OAT1 | COMSOL export bottleneck analysis | `src/oat1_comsol_export_analysis.py` |
+| Surface OAT1 | 1D radial diagnostic (IO only) | `src/oat1_surface_flux_model.py` |
+| Surface OAT1 | Journal figures from 1D tables | `src/paper_figures_oat1.py` |
+| IO vs OI | COMSOL export comparison (fair pair) | `src/comsol_io_oi_comparison.py` |
 
 
 ## Software
