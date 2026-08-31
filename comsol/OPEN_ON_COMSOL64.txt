@@ -1,0 +1,49 @@
+COMSOL 6.4 on the university PC - open these models
+====================================================
+
+Your Open dialog does NOT list *.java. It lists *.class.
+So you must COMPILE first, then open the .class file.
+
+STEP A - Put these 4 files in Documents\COMSOL\Batch  (or any short folder)
+----------------------------------------------------------------------
+  BAK_IO.java
+  BAK_OI.java
+  BAK_OI_fair.java
+  compile_models.bat
+
+Copy them from the git repo folder:
+  ...\comsol\
+
+STEP B - Compile (creates .class)
+---------------------------------
+Double-click compile_models.bat
+
+OR in Command Prompt:
+
+  cd C:\Users\P70091319\Documents\COMSOL\Batch
+  compile_models.bat
+
+You must see BAK_IO.class (and the other two) appear.
+
+If the bat says comsolcompile not found, edit compile_models.bat and set
+the full path to comsolcompile.exe, usually:
+
+  C:\Program Files\COMSOL\COMSOL64\Multiphysics\bin\win64\comsolcompile.exe
+
+STEP C - Open in COMSOL 6.4
+---------------------------
+1. File -> Open
+2. File type:  Compiled Model File for Java (*.class)
+3. Open:       BAK_IO.class
+4. File -> Save As -> BAK_IO.mph
+5. Right-click Mesh -> Build All
+6. Study 1 -> Compute
+7. Plot isc: must RISE after a few minutes
+
+Do NOT open RM_06_....mph (that file is damaged - unrelated).
+Do NOT use "All COMSOL Files" looking for .java - use *.class after compile.
+
+STEP D - Then OI models
+-----------------------
+Same: open BAK_OI.class and BAK_OI_fair.class after compile,
+same Vmax_A / Q_b / Q_d / C_in, then export flux tables.

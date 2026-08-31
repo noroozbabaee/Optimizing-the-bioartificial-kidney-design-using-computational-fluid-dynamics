@@ -1,61 +1,29 @@
 /*
- * BAK_OI_fair_OAT1_SurfaceFlux.java
+ * BAK_OI.java
  *
- * COMSOL Multiphysics 6.3 Model Java — OPEN WITH: File → Open
+ * COMSOL 6.3 / 6.4 Model Java for surface OAT1 BAK fiber.
  *
- * PLAN (read this before pressing Compute)
- * ---------------------------------------
- * 1. This file is ONE of three twins that share the SAME physics and
- *    DIFFERENT geometry. Physics is never volumetric Michaelis-Menten.
- * 2. Run IO first (this family). Confirm cell concentration isc rises
- *    and molar flow at OAT1 is into the cell. If isc falls, flip the
- *    sign of N0 on oat1_mem / oat1_cell (see CHECK SIGNS below).
- * 3. Export tables Flux BM, Flux OAT1, Flux CD vs time into
- *    data/comsol_surface_oat1/OI_fair/
- * 4. Repeat for the other two Java files, same Vmax_A, Q_b, Q_d, C_in.
- * 5. python3 src/comsol_io_oi_comparison.py
+ * UNIVERSITY COMSOL 6.4 (your Open dialog lists *.class, not *.java):
+ *   1. Copy this file + compile_models.bat into Documents\\COMSOL\\Batch
+ *   2. Double-click compile_models.bat  (creates BAK_OI.class)
+ *   3. COMSOL -> File -> Open -> Compiled Model File for Java (*.class)
+ *   4. Open BAK_OI.class
+ *   5. File -> Save As -> BAK_OI.mph
+ *   6. Right-click Mesh -> Build All, then Study 1 -> Compute
+ *   7. Check plot isc rises. If not, flip both OAT1 N0 signs together.
  *
- * Geometry: OI_fair  (fair pair to IO (matched A_OAT1 and V_blood; hydrodynamics unmatched))
- * Material order from the axis: dialysate | cell | membrane | blood
- *   R_apical (cell-dialysate) = 0.230000 mm
- *   R_OAT1   (membrane-cell)  = 0.250000 mm
- *   R_BM     (blood-membrane) = 0.350000 mm
- *   R_housing                 = 0.380789 mm
- *   A_OAT1 = 2*pi*R_OAT1*L    = 31.4159 mm^2
- *   V_blood                   = 1.4137 mm^3
- *
- * WHY THREE TRANSPORT INTERFACES
- * ------------------------------
- * One continuous concentration cannot represent OAT1: the transporter
- * sees a different concentration on the membrane side (extracellular)
- * and the cell side (intracellular). We therefore use three TDS fields:
- *   tds  (is)  blood + polymer membrane   — passive continuity at BM
- *   tds2 (isc) cell layer only
- *   tds3 (isd) dialysate only
- * Coupled by equal-and-opposite FLUXES (mass is transferred, not created):
- *   J_OAT1   = Vmax_A * ( is/(Km+is) - isc/(Km+isc) )     reversible OAT1
- *   J_apical = Vmax_ap * isc / (Km_ap + isc)              irreversible exit
- *
- * CHECK SIGNS (after the first 5 min of a test run)
- * -------------------------------------------------
- * isc in the cell must increase from 0. Molar flow 2*pi*r*J_OAT1 > 0
- * means blood → dialysate. If isc decreases, set N0 to the opposite sign
- * on both members of the pair (keep them equal-and-opposite).
- *
- * Compile / batch (optional):
- *   comsol compile BAK_OI_fair_OAT1_SurfaceFlux.java
- *   comsol batch -inputfile BAK_OI_fair_OAT1_SurfaceFlux.class -outputfile BAK_OI_fair_OAT1_SurfaceFlux.mph
+ * Do not open damaged RM_*.mph files from other folders.
  */
 
 import com.comsol.model.Model;
 import com.comsol.model.util.ModelUtil;
 
-public class BAK_OI_fair_OAT1_SurfaceFlux {
+public class BAK_OI {
 
   public static Model run() {
     Model model = ModelUtil.create("Model");
-    model.label("BAK outside-in FAIR — surface OAT1");
-    model.comments("OI_fair: surface OAT1 + apical efflux. fair pair to IO (matched A_OAT1 and V_blood; hydrodynamics unmatched).");
+    model.label("BAK outside-in (thesis) - surface OAT1");
+    model.comments("OI_original: surface OAT1 + apical efflux. control (thesis outside-in, unmatched area and blood volume).");
     parameters(model);
     component(model);
     geometry(model);
@@ -83,10 +51,10 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
 
   private static void parameters(Model model) {
     model.param().set("L", "20[mm]", "Fiber length");
-    model.param().set("R_AP", "0.230000[mm]", "Apical / cell-dialysate radius");
-    model.param().set("R_OAT1", "0.250000[mm]", "OAT1 / membrane-cell radius");
-    model.param().set("R_BM", "0.350000[mm]", "Blood-membrane radius");
-    model.param().set("R_house", "0.380789[mm]", "Housing radius");
+    model.param().set("R_AP", "0.150000[mm]", "Apical / cell-dialysate radius");
+    model.param().set("R_OAT1", "0.170000[mm]", "OAT1 / membrane-cell radius");
+    model.param().set("R_BM", "0.270000[mm]", "Blood-membrane radius");
+    model.param().set("R_house", "1.800000[mm]", "Housing radius");
 
     model.param().set("C_in", "0.1[mol/m^3]", "Inlet free IS = 100 uM (thesis)");
     model.param().set("D_is", "5.58e-10[m^2/s]", "IS diffusivity in aqueous domains");
@@ -101,8 +69,8 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
     // Volumetric flows are the FAIR quantities (same for IO and both OI models).
     model.param().set("Q_b", "1.666772e-09[m^3/s]", "Blood volumetric flow (~0.10 mL/min)");
     model.param().set("Q_d", "3.382911e-09[m^3/s]", "Dialysate volumetric flow (~0.20 mL/min)");
-    model.param().set("U_avg_b", "2.358000e-02[m/s]", "Mean blood speed = Q_b / A_blood for THIS geometry");
-    model.param().set("U_avg_d", "2.035565e-02[m/s]", "Mean dialysate speed = Q_d / A_dial for THIS geometry");
+    model.param().set("U_avg_b", "1.675192e-04[m/s]", "Mean blood speed = Q_b / A_blood for THIS geometry");
+    model.param().set("U_avg_d", "4.785840e-02[m/s]", "Mean dialysate speed = Q_d / A_dial for THIS geometry");
 
     model.param().set("Km_bl", "0.02[mol/m^3]", "OAT1 Km = 20 uM");
     model.param().set("Km_ap", "0.02[mol/m^3]", "Apical Km = 20 uM (same as thesis split-cell default)");
@@ -119,7 +87,7 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
     model.component().create("comp1", true);
     model.component("comp1").geom().create("geom1", 2);
     model.component("comp1").mesh().create("mesh1");
-    model.component("comp1").geom("geom1").label("OI_fair fiber (axisymmetric)");
+    model.component("comp1").geom("geom1").label("OI_original fiber (axisymmetric)");
     model.component("comp1").geom("geom1").lengthUnit("mm");
     model.component("comp1").geom("geom1").axisymmetric(true);
   }
@@ -131,25 +99,25 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
     model.component("comp1").geom("geom1").feature("r_dial")
         .set("pos", new String[]{"0.000000[mm]", "0"});
     model.component("comp1").geom("geom1").feature("r_dial")
-        .set("size", new String[]{"0.230000[mm]", "L"});
+        .set("size", new String[]{"0.150000[mm]", "L"});
     model.component("comp1").geom("geom1").create("r_cell", "Rectangle");
     model.component("comp1").geom("geom1").feature("r_cell").label("Cell layer");
     model.component("comp1").geom("geom1").feature("r_cell")
-        .set("pos", new String[]{"0.230000[mm]", "0"});
+        .set("pos", new String[]{"0.150000[mm]", "0"});
     model.component("comp1").geom("geom1").feature("r_cell")
         .set("size", new String[]{"0.020000[mm]", "L"});
     model.component("comp1").geom("geom1").create("r_mem", "Rectangle");
     model.component("comp1").geom("geom1").feature("r_mem").label("Membrane");
     model.component("comp1").geom("geom1").feature("r_mem")
-        .set("pos", new String[]{"0.250000[mm]", "0"});
+        .set("pos", new String[]{"0.170000[mm]", "0"});
     model.component("comp1").geom("geom1").feature("r_mem")
         .set("size", new String[]{"0.100000[mm]", "L"});
     model.component("comp1").geom("geom1").create("r_blood", "Rectangle");
     model.component("comp1").geom("geom1").feature("r_blood").label("Blood");
     model.component("comp1").geom("geom1").feature("r_blood")
-        .set("pos", new String[]{"0.350000[mm]", "0"});
+        .set("pos", new String[]{"0.270000[mm]", "0"});
     model.component("comp1").geom("geom1").feature("r_blood")
-        .set("size", new String[]{"0.030789[mm]", "L"});
+        .set("size", new String[]{"1.530000[mm]", "L"});
     model.component("comp1").geom("geom1").run();
   }
 
@@ -164,31 +132,31 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
     model.component("comp1").selection("dom_blood_mem").geom("geom1", 2);
     model.component("comp1").selection("dom_blood_mem").set(4, 3);
 
-    boxEdge(model, "bnd_blood_in", "Blood inlet z=0", 0.34900, 0.38179, -0.02000, 0.02000);
+    boxEdge(model, "bnd_blood_in", "Blood inlet z=0", 0.26900, 1.80100, -0.02000, 0.02000);
 
-    boxEdge(model, "bnd_blood_out", "Blood outlet z=L", 0.34900, 0.38179, 19.98000, 20.02000);
+    boxEdge(model, "bnd_blood_out", "Blood outlet z=L", 0.26900, 1.80100, 19.98000, 20.02000);
 
-    boxEdge(model, "bnd_dial_in", "Dialysate inlet z=L (countercurrent)", -0.00100, 0.23100, 19.98000, 20.02000);
+    boxEdge(model, "bnd_dial_in", "Dialysate inlet z=L (countercurrent)", -0.00100, 0.15100, 19.98000, 20.02000);
 
-    boxEdge(model, "bnd_dial_out", "Dialysate outlet z=0", -0.00100, 0.23100, -0.02000, 0.02000);
+    boxEdge(model, "bnd_dial_out", "Dialysate outlet z=0", -0.00100, 0.15100, -0.02000, 0.02000);
 
-    boxEdge(model, "bnd_bm", "Blood-membrane interface", 0.34850, 0.35150, 0.00000, 20.00000);
+    boxEdge(model, "bnd_bm", "Blood-membrane interface", 0.26850, 0.27150, 0.00000, 20.00000);
 
-    boxEdge(model, "bnd_mc", "Membrane-cell interface (OAT1)", 0.24850, 0.25150, 0.00000, 20.00000);
+    boxEdge(model, "bnd_mc", "Membrane-cell interface (OAT1)", 0.16850, 0.17150, 0.00000, 20.00000);
 
-    boxEdge(model, "bnd_cd", "Cell-dialysate interface (apical)", 0.22850, 0.23150, 0.00000, 20.00000);
+    boxEdge(model, "bnd_cd", "Cell-dialysate interface (apical)", 0.14850, 0.15150, 0.00000, 20.00000);
 
     boxEdge(model, "bnd_axis", "Axis r=0", -0.01000, 0.01000, 0.00000, 20.00000);
 
-    boxEdge(model, "bnd_outer", "Housing wall", 0.37879, 0.38279, 0.00000, 20.00000);
+    boxEdge(model, "bnd_outer", "Housing wall", 1.79800, 1.80200, 0.00000, 20.00000);
 
-    boxEdge(model, "bnd_mem_ends", "Membrane axial end z=0", 0.24900, 0.35100, -0.02000, 0.02000);
+    boxEdge(model, "bnd_mem_ends", "Membrane axial end z=0", 0.16900, 0.27100, -0.02000, 0.02000);
 
-    boxEdge(model, "bnd_mem_ends_L", "Membrane axial end z=L", 0.24900, 0.35100, 19.98000, 20.02000);
+    boxEdge(model, "bnd_mem_ends_L", "Membrane axial end z=L", 0.16900, 0.27100, 19.98000, 20.02000);
 
-    boxEdge(model, "bnd_cell_ends", "Cell axial end z=0", 0.22900, 0.25100, -0.02000, 0.02000);
+    boxEdge(model, "bnd_cell_ends", "Cell axial end z=0", 0.14900, 0.17100, -0.02000, 0.02000);
 
-    boxEdge(model, "bnd_cell_ends_L", "Cell axial end z=L", 0.22900, 0.25100, 19.98000, 20.02000);
+    boxEdge(model, "bnd_cell_ends_L", "Cell axial end z=L", 0.14900, 0.17100, 19.98000, 20.02000);
   }
 
   private static void explicitDomain(Model model, String tag, String label, int id) {
@@ -243,15 +211,15 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
 
   private static void laminarBlood(Model model) {
     model.component("comp1").physics().create("spf", "LaminarFlow", "geom1");
-    model.component("comp1").physics("spf").label("Laminar Flow — blood");
+    model.component("comp1").physics("spf").label("Laminar Flow - blood");
     model.component("comp1").physics("spf").selection().named("dom_blood");
     model.component("comp1").physics("spf").prop("ShapeProperty").set("order_fluid", 1);
 
     model.component("comp1").physics("spf").create("inl_b", "Inlet", 1);
     model.component("comp1").physics("spf").feature("inl_b").label("Blood inlet");
     model.component("comp1").physics("spf").feature("inl_b").selection().named("bnd_blood_in");
-    model.component("comp1").physics("spf").feature("inl_b").set("BoundaryCondition", "LaminarInflow");
-    model.component("comp1").physics("spf").feature("inl_b").set("Uavg", "U_avg_b");
+    // Velocity inlet (portable across COMSOL 6.3/6.4; avoid LaminarInflow API drift)
+    model.component("comp1").physics("spf").feature("inl_b").set("U0in", "U_avg_b");
 
     model.component("comp1").physics("spf").create("out_b", "Outlet", 1);
     model.component("comp1").physics("spf").feature("out_b").label("Blood outlet p=0");
@@ -261,15 +229,14 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
 
   private static void laminarDialysate(Model model) {
     model.component("comp1").physics().create("spf2", "LaminarFlow", "geom1");
-    model.component("comp1").physics("spf2").label("Laminar Flow — dialysate, countercurrent");
+    model.component("comp1").physics("spf2").label("Laminar Flow - dialysate, countercurrent");
     model.component("comp1").physics("spf2").selection().named("dom_dial");
     model.component("comp1").physics("spf2").prop("ShapeProperty").set("order_fluid", 1);
 
     model.component("comp1").physics("spf2").create("inl_d", "Inlet", 1);
     model.component("comp1").physics("spf2").feature("inl_d").label("Dialysate inlet z=L");
     model.component("comp1").physics("spf2").feature("inl_d").selection().named("bnd_dial_in");
-    model.component("comp1").physics("spf2").feature("inl_d").set("BoundaryCondition", "LaminarInflow");
-    model.component("comp1").physics("spf2").feature("inl_d").set("Uavg", "U_avg_d");
+    model.component("comp1").physics("spf2").feature("inl_d").set("U0in", "U_avg_d");
 
     model.component("comp1").physics("spf2").create("out_d", "Outlet", 1);
     model.component("comp1").physics("spf2").feature("out_d").label("Dialysate outlet p=0");
@@ -279,7 +246,7 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
 
   private static void transportBloodMembrane(Model model) {
     model.component("comp1").physics().create("tds", "DilutedSpecies", "geom1");
-    model.component("comp1").physics("tds").label("TDS — IS in blood + membrane");
+    model.component("comp1").physics("tds").label("TDS - IS in blood + membrane");
     model.component("comp1").physics("tds").selection().named("dom_blood_mem");
     model.component("comp1").physics("tds").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds").field("concentration").field("is");
@@ -313,7 +280,7 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
 
   private static void transportCell(Model model) {
     model.component("comp1").physics().create("tds2", "DilutedSpecies", "geom1");
-    model.component("comp1").physics("tds2").label("TDS — IS in cell (no volume MM)");
+    model.component("comp1").physics("tds2").label("TDS - IS in cell (no volume MM)");
     model.component("comp1").physics("tds2").selection().named("dom_cell");
     model.component("comp1").physics("tds2").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds2").field("concentration").field("isc");
@@ -330,7 +297,7 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
 
   private static void transportDialysate(Model model) {
     model.component("comp1").physics().create("tds3", "DilutedSpecies", "geom1");
-    model.component("comp1").physics("tds3").label("TDS — IS in dialysate");
+    model.component("comp1").physics("tds3").label("TDS - IS in dialysate");
     model.component("comp1").physics("tds3").selection().named("dom_dial");
     model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds3").field("concentration").field("isd");
@@ -354,7 +321,7 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
   private static void oat1AndApicalCoupling(Model model) {
     // Equal-and-opposite fluxes: solute that leaves one field enters the other.
     // N0 is INWARD flux into the physics selection (COMSOL convention).
-    // Pair 1 — OAT1 at membrane-cell. Positive J_OAT1: membrane -> cell.
+    // Pair 1 - OAT1 at membrane-cell. Positive J_OAT1: membrane -> cell.
     model.component("comp1").physics("tds").create("oat1_mem", "Fluxes", 1);
     model.component("comp1").physics("tds").feature("oat1_mem")
         .label("OAT1: outward from membrane");
@@ -367,7 +334,7 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
     model.component("comp1").physics("tds2").feature("oat1_cell").selection().named("bnd_mc");
     model.component("comp1").physics("tds2").feature("oat1_cell").setIndex("N0", "J_OAT1", 0);
 
-    // Pair 2 — apical at cell-dialysate. Positive J_apical: cell -> dialysate.
+    // Pair 2 - apical at cell-dialysate. Positive J_apical: cell -> dialysate.
     model.component("comp1").physics("tds2").create("ap_cell", "Fluxes", 1);
     model.component("comp1").physics("tds2").feature("ap_cell")
         .label("Apical: outward from cell");
@@ -391,7 +358,7 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
     model.component("comp1").mesh("mesh1").feature("size1").selection().named("dom_cell");
     model.component("comp1").mesh("mesh1").feature("size1").set("custom", "on");
     model.component("comp1").mesh("mesh1").feature("size1").set("hmax", "0.005[mm]");
-    model.component("comp1").mesh("mesh1").run();
+    // Mesh is built in the GUI (right-click Mesh -> Build All) after open.
   }
 
   private static void studies(Model model) {
@@ -449,7 +416,7 @@ public class BAK_OI_fair_OAT1_SurfaceFlux {
     model.result("pg_is").feature("surf1").set("expr", "is");
 
     model.result().create("pg_isc", "PlotGroup2D");
-    model.result("pg_isc").label("IS cell (isc) — must be >0 after a few minutes");
+    model.result("pg_isc").label("IS cell (isc) - must be >0 after a few minutes");
     model.result("pg_isc").create("surf2", "Surface");
     model.result("pg_isc").feature("surf2").set("expr", "isc");
   }

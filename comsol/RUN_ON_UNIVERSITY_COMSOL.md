@@ -1,5 +1,9 @@
 # How to run the new BAK models on the university COMSOL server
 
+> **COMSOL 6.4 users:** your File-Open dialog lists `*.class`, not `*.java`.
+> Follow **`OPEN_ON_COMSOL64.txt`** and run **`compile_models.bat`** first.
+> Open `BAK_IO.class` (short name), not old `RM_*.mph` files.
+
 This is the whole plan, in order. Do not skip the sign check in step 3.
 
 ## What you are comparing

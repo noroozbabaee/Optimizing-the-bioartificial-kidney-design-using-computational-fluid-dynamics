@@ -1,10 +1,11 @@
-"""Write COMSOL 6.3 Model Java files for IO, original OI, and fair OI.
+"""Write COMSOL 6.3/6.4 Model Java files for IO, original OI, and fair OI.
 
 Run from the repository root (does not need COMSOL):
 
     python3 src/write_comsol_java_models.py
 
-Then on the university server: COMSOL → File → Open → the .java file.
+On the university PC (COMSOL 6.4): compile to .class, then File > Open the .class.
+See comsol/compile_models.bat and comsol/OPEN_ON_COMSOL64.txt.
 
 WHY THREE MODELS
 ----------------
@@ -58,10 +59,11 @@ def java_for(geom: FiberGeometry) -> str:
     q_b, q_d = volumetric_flows_from_io_mean_velocity()
     u_b, u_d = mean_velocities(geom, q_b, q_d)
     Lmm = L_M * 1e3
+    # Short class names: easier on Windows path limits and COMSOL Open dialogs.
     class_name = {
-        "IO": "BAK_IO_OAT1_SurfaceFlux",
-        "OI_original": "BAK_OI_OAT1_SurfaceFlux",
-        "OI_fair": "BAK_OI_fair_OAT1_SurfaceFlux",
+        "IO": "BAK_IO",
+        "OI_original": "BAK_OI",
+        "OI_fair": "BAK_OI_fair",
     }[geom.name]
 
     if geom.lumen_fluid == "blood":
@@ -136,9 +138,9 @@ def java_for(geom: FiberGeometry) -> str:
     boxEdge(model, "{tag}", "{label}", {xmin:.5f}, {xmax:.5f}, {ymin:.5f}, {ymax:.5f});"""
 
     title = {
-        "IO": "BAK inside-out — surface OAT1",
-        "OI_original": "BAK outside-in (thesis) — surface OAT1",
-        "OI_fair": "BAK outside-in FAIR — surface OAT1",
+        "IO": "BAK inside-out - surface OAT1",
+        "OI_original": "BAK outside-in (thesis) - surface OAT1",
+        "OI_fair": "BAK outside-in FAIR - surface OAT1",
     }[geom.name]
 
     stack = (
@@ -150,7 +152,7 @@ def java_for(geom: FiberGeometry) -> str:
     return f'''/*
  * {class_name}.java
  *
- * COMSOL Multiphysics 6.3 Model Java — OPEN WITH: File → Open
+ * COMSOL Multiphysics 6.3 Model Java - OPEN WITH: File -> Open
  *
  * PLAN (read this before pressing Compute)
  * ---------------------------------------
@@ -178,7 +180,7 @@ def java_for(geom: FiberGeometry) -> str:
  * One continuous concentration cannot represent OAT1: the transporter
  * sees a different concentration on the membrane side (extracellular)
  * and the cell side (intracellular). We therefore use three TDS fields:
- *   tds  (is)  blood + polymer membrane   — passive continuity at BM
+ *   tds  (is)  blood + polymer membrane   - passive continuity at BM
  *   tds2 (isc) cell layer only
  *   tds3 (isd) dialysate only
  * Coupled by equal-and-opposite FLUXES (mass is transferred, not created):
@@ -188,7 +190,7 @@ def java_for(geom: FiberGeometry) -> str:
  * CHECK SIGNS (after the first 5 min of a test run)
  * -------------------------------------------------
  * isc in the cell must increase from 0. Molar flow 2*pi*r*J_OAT1 > 0
- * means blood → dialysate. If isc decreases, set N0 to the opposite sign
+ * means blood -> dialysate. If isc decreases, set N0 to the opposite sign
  * on both members of the pair (keep them equal-and-opposite).
  *
  * Compile / batch (optional):
@@ -355,15 +357,15 @@ public class {class_name} {{
 
   private static void laminarBlood(Model model) {{
     model.component("comp1").physics().create("spf", "LaminarFlow", "geom1");
-    model.component("comp1").physics("spf").label("Laminar Flow — blood");
+    model.component("comp1").physics("spf").label("Laminar Flow - blood");
     model.component("comp1").physics("spf").selection().named("dom_blood");
     model.component("comp1").physics("spf").prop("ShapeProperty").set("order_fluid", 1);
 
     model.component("comp1").physics("spf").create("inl_b", "Inlet", 1);
     model.component("comp1").physics("spf").feature("inl_b").label("Blood inlet");
     model.component("comp1").physics("spf").feature("inl_b").selection().named("bnd_blood_in");
-    model.component("comp1").physics("spf").feature("inl_b").set("BoundaryCondition", "LaminarInflow");
-    model.component("comp1").physics("spf").feature("inl_b").set("Uavg", "U_avg_b");
+    // Velocity inlet (portable across COMSOL 6.3/6.4; avoid LaminarInflow API drift)
+    model.component("comp1").physics("spf").feature("inl_b").set("U0in", "U_avg_b");
 
     model.component("comp1").physics("spf").create("out_b", "Outlet", 1);
     model.component("comp1").physics("spf").feature("out_b").label("Blood outlet p=0");
@@ -373,15 +375,14 @@ public class {class_name} {{
 
   private static void laminarDialysate(Model model) {{
     model.component("comp1").physics().create("spf2", "LaminarFlow", "geom1");
-    model.component("comp1").physics("spf2").label("Laminar Flow — dialysate, countercurrent");
+    model.component("comp1").physics("spf2").label("Laminar Flow - dialysate, countercurrent");
     model.component("comp1").physics("spf2").selection().named("dom_dial");
     model.component("comp1").physics("spf2").prop("ShapeProperty").set("order_fluid", 1);
 
     model.component("comp1").physics("spf2").create("inl_d", "Inlet", 1);
     model.component("comp1").physics("spf2").feature("inl_d").label("Dialysate inlet z=L");
     model.component("comp1").physics("spf2").feature("inl_d").selection().named("bnd_dial_in");
-    model.component("comp1").physics("spf2").feature("inl_d").set("BoundaryCondition", "LaminarInflow");
-    model.component("comp1").physics("spf2").feature("inl_d").set("Uavg", "U_avg_d");
+    model.component("comp1").physics("spf2").feature("inl_d").set("U0in", "U_avg_d");
 
     model.component("comp1").physics("spf2").create("out_d", "Outlet", 1);
     model.component("comp1").physics("spf2").feature("out_d").label("Dialysate outlet p=0");
@@ -391,7 +392,7 @@ public class {class_name} {{
 
   private static void transportBloodMembrane(Model model) {{
     model.component("comp1").physics().create("tds", "DilutedSpecies", "geom1");
-    model.component("comp1").physics("tds").label("TDS — IS in blood + membrane");
+    model.component("comp1").physics("tds").label("TDS - IS in blood + membrane");
     model.component("comp1").physics("tds").selection().named("dom_blood_mem");
     model.component("comp1").physics("tds").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds").field("concentration").field("is");
@@ -425,7 +426,7 @@ public class {class_name} {{
 
   private static void transportCell(Model model) {{
     model.component("comp1").physics().create("tds2", "DilutedSpecies", "geom1");
-    model.component("comp1").physics("tds2").label("TDS — IS in cell (no volume MM)");
+    model.component("comp1").physics("tds2").label("TDS - IS in cell (no volume MM)");
     model.component("comp1").physics("tds2").selection().named("dom_cell");
     model.component("comp1").physics("tds2").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds2").field("concentration").field("isc");
@@ -442,7 +443,7 @@ public class {class_name} {{
 
   private static void transportDialysate(Model model) {{
     model.component("comp1").physics().create("tds3", "DilutedSpecies", "geom1");
-    model.component("comp1").physics("tds3").label("TDS — IS in dialysate");
+    model.component("comp1").physics("tds3").label("TDS - IS in dialysate");
     model.component("comp1").physics("tds3").selection().named("dom_dial");
     model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds3").field("concentration").field("isd");
@@ -466,7 +467,7 @@ public class {class_name} {{
   private static void oat1AndApicalCoupling(Model model) {{
     // Equal-and-opposite fluxes: solute that leaves one field enters the other.
     // N0 is INWARD flux into the physics selection (COMSOL convention).
-    // Pair 1 — OAT1 at membrane-cell. Positive J_OAT1: membrane -> cell.
+    // Pair 1 - OAT1 at membrane-cell. Positive J_OAT1: membrane -> cell.
     model.component("comp1").physics("tds").create("oat1_mem", "Fluxes", 1);
     model.component("comp1").physics("tds").feature("oat1_mem")
         .label("OAT1: outward from membrane");
@@ -479,7 +480,7 @@ public class {class_name} {{
     model.component("comp1").physics("tds2").feature("oat1_cell").selection().named("bnd_mc");
     model.component("comp1").physics("tds2").feature("oat1_cell").setIndex("N0", "J_OAT1", 0);
 
-    // Pair 2 — apical at cell-dialysate. Positive J_apical: cell -> dialysate.
+    // Pair 2 - apical at cell-dialysate. Positive J_apical: cell -> dialysate.
     model.component("comp1").physics("tds2").create("ap_cell", "Fluxes", 1);
     model.component("comp1").physics("tds2").feature("ap_cell")
         .label("Apical: outward from cell");
@@ -503,7 +504,7 @@ public class {class_name} {{
     model.component("comp1").mesh("mesh1").feature("size1").selection().named("dom_cell");
     model.component("comp1").mesh("mesh1").feature("size1").set("custom", "on");
     model.component("comp1").mesh("mesh1").feature("size1").set("hmax", "0.005[mm]");
-    model.component("comp1").mesh("mesh1").run();
+    // Mesh is built in the GUI (right-click Mesh -> Build All) after open.
   }}
 
   private static void studies(Model model) {{
@@ -561,7 +562,7 @@ public class {class_name} {{
     model.result("pg_is").feature("surf1").set("expr", "is");
 
     model.result().create("pg_isc", "PlotGroup2D");
-    model.result("pg_isc").label("IS cell (isc) — must be >0 after a few minutes");
+    model.result("pg_isc").label("IS cell (isc) - must be >0 after a few minutes");
     model.result("pg_isc").create("surf2", "Surface");
     model.result("pg_isc").feature("surf2").set("expr", "isc");
   }}
@@ -580,9 +581,9 @@ public class {class_name} {{
 def main() -> None:
     COMSOL.mkdir(parents=True, exist_ok=True)
     mapping = {
-        "IO": "BAK_IO_OAT1_SurfaceFlux.java",
-        "OI_original": "BAK_OI_OAT1_SurfaceFlux.java",
-        "OI_fair": "BAK_OI_fair_OAT1_SurfaceFlux.java",
+        "IO": "BAK_IO.java",
+        "OI_original": "BAK_OI.java",
+        "OI_fair": "BAK_OI_fair.java",
     }
     for key, filename in mapping.items():
         text = java_for(all_geometries()[key])

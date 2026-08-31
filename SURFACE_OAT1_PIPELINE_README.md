@@ -7,7 +7,11 @@
 **Repository branch with these files:** `cursor/oat1-surface-flux-bottleneck-4ac1`  
 **Pull request:** https://github.com/noroozbabaee/Optimizing-the-bioartificial-kidney-design-using-computational-fluid-dynamics/pull/1
 
-**Short path if you only want to run COMSOL today:** [`comsol/RUN_ON_UNIVERSITY_COMSOL.md`](comsol/RUN_ON_UNIVERSITY_COMSOL.md)
+**Short path if you only want to run COMSOL today:**
+
+- **COMSOL 6.4 (university):** [`comsol/OPEN_ON_COMSOL64.txt`](comsol/OPEN_ON_COMSOL64.txt) + [`comsol/compile_models.bat`](comsol/compile_models.bat) — open `BAK_IO.class`
+- Also: [`comsol/RUN_ON_UNIVERSITY_COMSOL.md`](comsol/RUN_ON_UNIVERSITY_COMSOL.md)
+
 
 ---
 
