@@ -5,12 +5,13 @@
  *
  * COMSOL 6.4 API NOTES (do not reintroduce these)
  * -----------------------------------------------
- *   NEVER setIndex("D_c", ...) or setIndex("Dc", ...)  (both unknown on 6.4)
+ *   NEVER setIndex("D_c"/"Dc", ...)
+ *   NEVER create(..., "ConvectionDiffusion", ...)  (unknown feature ID)
+ *   NEVER create ReactingFlowDilutedSpecies via API
  *   NEVER set("minput_velocity_src", ...)
- *   NEVER set("FluidFlow"/"DilutedSpecies") on ReactingFlowDilutedSpecies
- *   main() must be only run(); no model.save / System.exit
- *   Set diffusivity in GUI after open: Fluid node -> Diffusion -> User defined
- *     blood/dialysate/cell: D_is ; membrane override: D_mem
+ *   NEVER set("FluidFlow"/"DilutedSpecies") on multiphysics
+ *   main() = run() only
+ *   After open (GUI): set D_is/D_mem; add Reacting Flow multiphysics couplings
  *
  * PLAN (read this before pressing Compute)
  * ---------------------------------------
@@ -293,15 +294,10 @@ public class BAK_IO {
     model.component("comp1").physics("tds").field("concentration").field("is");
     model.component("comp1").physics("tds").field("concentration").component(new String[]{"is"});
 
-    // COMSOL 6.4: do NOT set D_c / Dc via API (both throw Unknown parameter).
-    // Do NOT set minput_velocity_src. Velocity: Multiphysics after open.
-    // Diffusivity: set in GUI on each Fluid node (D_is / D_mem parameters exist).
-    model.component("comp1").physics("tds").feature("cdm1").label("Blood Fluid (default)");
-
-    // Extra domain node on membrane (selection only; set D_mem in GUI).
-    model.component("comp1").physics("tds").create("cdm_mem", "ConvectionDiffusion", 2);
-    model.component("comp1").physics("tds").feature("cdm_mem").label("Membrane diffusion");
-    model.component("comp1").physics("tds").feature("cdm_mem").selection().named("dom_mem");
+    // COMSOL 6.4: never set D_c/Dc; never create ConvectionDiffusion (unknown feature ID).
+    // Default Fluid node (cdm1) covers blood+membrane. Set D_is / D_mem in GUI after open.
+    // Do NOT create an extra membrane Fluid/ConvectionDiffusion domain feature via API.
+    model.component("comp1").physics("tds").feature("cdm1").label("Blood+membrane Fluid (default)");
 
     model.component("comp1").physics("tds").feature("init1").set("is", "C_in");
 
@@ -388,21 +384,12 @@ public class BAK_IO {
 
 
   private static void coupleFlowAndTransport(Model model) {
-    // Reacting Flow, Diluted Species (COMSOL 6.4).
-    // Create couplings + domain selections only.
-    // Do NOT call .set("FluidFlow"...)/.set("DilutedSpecies"...) — those
-    // property keys are version-dependent and caused "Unknown parameter" on open.
-    // After File>Open: click each Multiphysics node and pick:
-    //   rfd_blood -> Fluid flow = Laminar Flow - blood, Species = TDS blood+membrane
-    //   rfd_dial  -> Fluid flow = Laminar Flow - dialysate, Species = TDS dialysate
-    // (Often auto-selected when only one sensible pair intersects the selection.)
-    model.component("comp1").multiphysics().create("rfd_blood", "ReactingFlowDilutedSpecies", 2);
-    model.component("comp1").multiphysics("rfd_blood").label("Flow-transport blood");
-    model.component("comp1").multiphysics("rfd_blood").selection().named("dom_blood");
-
-    model.component("comp1").multiphysics().create("rfd_dial", "ReactingFlowDilutedSpecies", 2);
-    model.component("comp1").multiphysics("rfd_dial").label("Flow-transport dialysate");
-    model.component("comp1").multiphysics("rfd_dial").selection().named("dom_dial");
+    // COMSOL 6.4: do NOT create ReactingFlowDilutedSpecies via API here.
+    // (Feature/property names are version-fragile and blocked File>Open.)
+    // After open: Multiphysics ribbon -> Reacting Flow, Diluted Species
+    //   couple Laminar Flow - blood  <-> TDS blood+membrane (dom_blood)
+    //   couple Laminar Flow - dialysate <-> TDS dialysate (dom_dial)
+    // Diffusivity: each TDS Fluid node -> User defined -> D_is (membrane: D_mem).
   }
 
   private static void mesh(Model model) {
