@@ -569,6 +569,7 @@ public class {class_name} {{
   private static void intLine(Model model, String tag, String label, String sel, String expr) {{
     model.result().numerical().create(tag, "IntLine");
     model.result().numerical(tag).label(label);
+    model.result().numerical(tag).selection().geom("geom1", 1);
     model.result().numerical(tag).selection().named(sel);
     model.result().numerical(tag).set("expr", expr);
     model.result().numerical(tag).set("unit", "mol/s");
