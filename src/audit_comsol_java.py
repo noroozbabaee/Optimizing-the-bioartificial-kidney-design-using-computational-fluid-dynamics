@@ -34,6 +34,7 @@ BANNED = {
     r'feature\("cdm1"\)': "default feature tag may not exist",
     r'feature\("init1"\)': "default feature tag may not exist",
     r'prop\("ShapeProperty"\)': "property may not exist on 6.4",
+    r'"Explicit"': "Explicit selections rejected on this build; use int[] domains",
     r"System\.exit": "kills the COMSOL server on File>Open",
     r"model\.save": "IOException during File>Open",
 }
@@ -73,13 +74,16 @@ def audit(path: Path) -> list[str]:
         if used not in created:
             problems.append(f"selection '{used}' used but never created")
 
-    # Every selection must declare an entity dimension.
-    for block in re.findall(r'selection\(\)\.create\("(\w+)", "(\w+)"\)', code):
-        tag, kind = block
-        if kind in {"Box", "Explicit"}:
-            scope = code.split(f'create("{tag}", "{kind}")', 1)[1][:600]
-            if "entitydim" not in scope and ".geom(" not in scope:
-                problems.append(f"selection '{tag}' has no entitydim")
+    # Box selections must declare entitydim (Explicit must not exist at all).
+    for tag, kind in re.findall(r'selection\(\)\.create\("?(\w+)"?, "(\w+)"\)', code):
+        if kind == "Box":
+            scope = code.split(f'"{kind}")', 1)[1][:600]
+            if "entitydim" not in scope:
+                problems.append(f"Box selection '{tag}' has no entitydim")
+
+    # entitydim is a Box property only; it is rejected on Explicit selections.
+    if re.search(r'"Explicit"[\s\S]{0,400}entitydim', code):
+        problems.append("entitydim set on an Explicit selection")
 
     # Physics feature tags must be created before they are configured.
     for phys, tag in re.findall(r'physics\("(\w+)"\)\.feature\("(\w+)"\)', code):

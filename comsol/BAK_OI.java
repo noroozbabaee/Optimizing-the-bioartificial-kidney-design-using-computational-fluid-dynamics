@@ -168,16 +168,17 @@ public class BAK_OI {
     model.component("comp1").geom("geom1").run();
   }
 
-  private static void selections(Model model) {
-    explicitDomain(model, "dom_blood", "Blood domain", 4);
-    explicitDomain(model, "dom_mem", "Membrane domain", 3);
-    explicitDomain(model, "dom_cell", "Cell domain", 2);
-    explicitDomain(model, "dom_dial", "Dialysate domain", 1);
+  // Domain numbers for THIS geometry (rectangles stack outward from the axis).
+  private static final int DOM_BLOOD = 4;
+  private static final int DOM_MEM = 3;
+  private static final int DOM_CELL = 2;
+  private static final int DOM_DIAL = 1;
 
-    model.component("comp1").selection().create("dom_blood_mem", "Explicit");
-    model.component("comp1").selection("dom_blood_mem").label("Blood + membrane");
-    model.component("comp1").selection("dom_blood_mem").set("entitydim", 2);
-    model.component("comp1").selection("dom_blood_mem").set(new int[]{4, 3});
+  private static void selections(Model model) {
+    // No Explicit selections: this COMSOL 6.4 build rejects both
+    // .geom("geom1", 2) and .set("entitydim", 2) on Explicit.
+    // Domains are assigned directly as int arrays (see DOM_* above).
+    // Only Box selections are used, and only for boundaries (entitydim 1).
 
     boxEdge(model, "bnd_blood_in", "Blood inlet z=0", 0.26900, 1.80100, -0.02000, 0.02000);
 
@@ -206,17 +207,10 @@ public class BAK_OI {
     boxEdge(model, "bnd_cell_ends_L", "Cell axial end z=L", 0.14900, 0.17100, 19.98000, 20.02000);
   }
 
-  private static void explicitDomain(Model model, String tag, String label, int id) {
-    model.component("comp1").selection().create(tag, "Explicit");
-    model.component("comp1").selection(tag).label(label);
-    model.component("comp1").selection(tag).set("entitydim", 2);
-    model.component("comp1").selection(tag).set(new int[]{id});
-  }
-
   private static void boxEdge(
       Model model, String tag, String label,
       double xmin, double xmax, double ymin, double ymax) {
-    // entitydim=1 (edges). Missing it gives "No entity dimension specified".
+    // entitydim=1 (edges). Box DOES support entitydim; Explicit does not.
     model.component("comp1").selection().create(tag, "Box");
     model.component("comp1").selection(tag).label(label);
     model.component("comp1").selection(tag).set("entitydim", 1);
@@ -246,13 +240,13 @@ public class BAK_OI {
   private static void materials(Model model) {
     model.component("comp1").material().create("mat_blood", "Common");
     model.component("comp1").material("mat_blood").label("Blood");
-    model.component("comp1").material("mat_blood").selection().named("dom_blood");
+    model.component("comp1").material("mat_blood").selection().set(new int[]{DOM_BLOOD});
     model.component("comp1").material("mat_blood").propertyGroup("def").set("density", "rho_b");
     model.component("comp1").material("mat_blood").propertyGroup("def").set("dynamicviscosity", "mu_b");
 
     model.component("comp1").material().create("mat_dial", "Common");
     model.component("comp1").material("mat_dial").label("Dialysate");
-    model.component("comp1").material("mat_dial").selection().named("dom_dial");
+    model.component("comp1").material("mat_dial").selection().set(new int[]{DOM_DIAL});
     model.component("comp1").material("mat_dial").propertyGroup("def").set("density", "rho_d");
     model.component("comp1").material("mat_dial").propertyGroup("def").set("dynamicviscosity", "mu_d");
   }
@@ -260,7 +254,7 @@ public class BAK_OI {
   private static void laminarBlood(Model model) {
     model.component("comp1").physics().create("spf", "LaminarFlow", "geom1");
     model.component("comp1").physics("spf").label("Laminar Flow - blood");
-    model.component("comp1").physics("spf").selection().named("dom_blood");
+    model.component("comp1").physics("spf").selection().set(new int[]{DOM_BLOOD});
 
     model.component("comp1").physics("spf").create("inl_b", "Inlet", 1);
     model.component("comp1").physics("spf").feature("inl_b").label("Blood inlet");
@@ -277,7 +271,7 @@ public class BAK_OI {
   private static void laminarDialysate(Model model) {
     model.component("comp1").physics().create("spf2", "LaminarFlow", "geom1");
     model.component("comp1").physics("spf2").label("Laminar Flow - dialysate, countercurrent");
-    model.component("comp1").physics("spf2").selection().named("dom_dial");
+    model.component("comp1").physics("spf2").selection().set(new int[]{DOM_DIAL});
 
     model.component("comp1").physics("spf2").create("inl_d", "Inlet", 1);
     model.component("comp1").physics("spf2").feature("inl_d").label("Dialysate inlet z=L");
@@ -293,7 +287,7 @@ public class BAK_OI {
   private static void transportBloodMembrane(Model model) {
     model.component("comp1").physics().create("tds", "DilutedSpecies", "geom1");
     model.component("comp1").physics("tds").label("TDS - IS in blood + membrane");
-    model.component("comp1").physics("tds").selection().named("dom_blood_mem");
+    model.component("comp1").physics("tds").selection().set(new int[]{DOM_BLOOD, DOM_MEM});
     // Species keeps the COMSOL default name c. Set D and inlet value in the GUI.
 
     model.component("comp1").physics("tds").create("conc_b", "Concentration", 1);
@@ -313,7 +307,7 @@ public class BAK_OI {
   private static void transportCell(Model model) {
     model.component("comp1").physics().create("tds2", "DilutedSpecies", "geom1");
     model.component("comp1").physics("tds2").label("TDS - IS in cell (no volume MM)");
-    model.component("comp1").physics("tds2").selection().named("dom_cell");
+    model.component("comp1").physics("tds2").selection().set(new int[]{DOM_CELL});
     // Default species becomes c2 when tds already uses c.
 
     model.component("comp1").physics("tds2").create("nflx_c0", "NoFlux", 1);
@@ -325,7 +319,7 @@ public class BAK_OI {
   private static void transportDialysate(Model model) {
     model.component("comp1").physics().create("tds3", "DilutedSpecies", "geom1");
     model.component("comp1").physics("tds3").label("TDS - IS in dialysate");
-    model.component("comp1").physics("tds3").selection().named("dom_dial");
+    model.component("comp1").physics("tds3").selection().set(new int[]{DOM_DIAL});
     // Default species becomes c3.
 
     model.component("comp1").physics("tds3").create("conc_d", "Concentration", 1);
@@ -382,7 +376,7 @@ public class BAK_OI {
     model.component("comp1").mesh("mesh1").feature("map1").feature("dis_z").set("numelem", 80);
     model.component("comp1").mesh("mesh1").create("size1", "Size");
     model.component("comp1").mesh("mesh1").feature("size1").selection().geom("geom1", 2);
-    model.component("comp1").mesh("mesh1").feature("size1").selection().named("dom_cell");
+    model.component("comp1").mesh("mesh1").feature("size1").selection().set(new int[]{DOM_CELL});
     model.component("comp1").mesh("mesh1").feature("size1").set("custom", "on");
     model.component("comp1").mesh("mesh1").feature("size1").set("hmax", "0.005[mm]");
     // Mesh is built in the GUI (right-click Mesh -> Build All) after open.
