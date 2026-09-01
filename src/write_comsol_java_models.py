@@ -156,14 +156,15 @@ def java_for(geom: FiberGeometry) -> str:
  *
  * COMSOL 6.4 API NOTES (do not reintroduce these)
  * -----------------------------------------------
- *   NEVER .set("is"/"isc"/"isd", ...) on init/Concentration — use setIndex("c0", ..., 0)
+ *   NEVER set init/Concentration values via API (.set is/isc/isd OR setIndex c0)
+ *   NEVER setIndex("N0", ...) on Fluxes if unknown — set flux in GUI
  *   NEVER setIndex("D_c"/"Dc", ...)
  *   NEVER create(..., "ConvectionDiffusion", ...)  (unknown feature ID)
  *   NEVER create ReactingFlowDilutedSpecies via API
  *   NEVER set("minput_velocity_src", ...)
  *   NEVER set("FluidFlow"/"DilutedSpecies") on multiphysics
  *   main() = run() only
- *   After open (GUI): set D_is/D_mem; add Reacting Flow multiphysics couplings
+ *   After open (GUI): C_in on blood inlet; D_is/D_mem; Flux N0; Reacting Flow couples
  *
  * PLAN (read this before pressing Compute)
  * ---------------------------------------
@@ -341,12 +342,12 @@ public class {class_name} {{
     model.component("comp1").variable("var1").label("Transporter fluxes and inlet profile");
     model.component("comp1").variable("var1")
         .set("u_blood", "{u_blood_expr}", "Blood inlet axial speed");
-    // Reversible OAT1: net flux positive when extracellular is > intracellular isc.
+    // Reversible OAT1: default species names are c (tds), c2 (tds2), c3 (tds3).
     model.component("comp1").variable("var1")
-        .set("J_OAT1", "Vmax_A*(is/(Km_bl+is)-isc/(Km_bl+isc))",
+        .set("J_OAT1", "Vmax_A*(c/(Km_bl+c)-c2/(Km_bl+c2))",
             "OAT1 net flux mol/(m^2 s), membrane -> cell when >0");
     model.component("comp1").variable("var1")
-        .set("J_apical", "Vmax_ap*isc/(Km_ap+isc)",
+        .set("J_apical", "Vmax_ap*c2/(Km_ap+c2)",
             "Apical efflux mol/(m^2 s), cell -> dialysate");
     model.component("comp1").variable("var1")
         .set("n_dot_OAT1", "2*pi*r*J_OAT1", "OAT1 molar flow per length * r-weight");
@@ -406,21 +407,13 @@ public class {class_name} {{
     model.component("comp1").physics("tds").label("TDS - IS in blood + membrane");
     model.component("comp1").physics("tds").selection().named("dom_blood_mem");
     model.component("comp1").physics("tds").prop("ShapeProperty").set("order_concentration", 2);
-    model.component("comp1").physics("tds").field("concentration").field("is");
-    model.component("comp1").physics("tds").field("concentration").component(new String[]{{"is"}});
-
-    // COMSOL 6.4: never set D_c/Dc; never create ConvectionDiffusion (unknown feature ID).
-    // Default Fluid node (cdm1) covers blood+membrane. Set D_is / D_mem in GUI after open.
-    // Do NOT create an extra membrane Fluid/ConvectionDiffusion domain feature via API.
+    // Keep default species name c (do not rename; do not set init/c0 — both unknown on 6.4).
+    // After open: Concentration "Blood inlet" -> set value C_in; Fluid -> D_is.
     model.component("comp1").physics("tds").feature("cdm1").label("Blood+membrane Fluid (default)");
 
-    // COMSOL 6.4: init/Concentration use property c0 — NOT .set("is", ...).
-    model.component("comp1").physics("tds").feature("init1").setIndex("c0", "C_in", 0);
-
     model.component("comp1").physics("tds").create("conc_b", "Concentration", 1);
-    model.component("comp1").physics("tds").feature("conc_b").label("Blood inlet c=C_in");
+    model.component("comp1").physics("tds").feature("conc_b").label("Blood inlet -> set to C_in in GUI");
     model.component("comp1").physics("tds").feature("conc_b").selection().named("bnd_blood_in");
-    model.component("comp1").physics("tds").feature("conc_b").setIndex("c0", "C_in", 0);
 
     model.component("comp1").physics("tds").create("outfl_b", "Outflow", 1);
     model.component("comp1").physics("tds").feature("outfl_b").label("Blood outflow");
@@ -437,9 +430,7 @@ public class {class_name} {{
     model.component("comp1").physics("tds2").label("TDS - IS in cell (no volume MM)");
     model.component("comp1").physics("tds2").selection().named("dom_cell");
     model.component("comp1").physics("tds2").prop("ShapeProperty").set("order_concentration", 2);
-    model.component("comp1").physics("tds2").field("concentration").field("isc");
-    model.component("comp1").physics("tds2").field("concentration").component(new String[]{{"isc"}});
-    model.component("comp1").physics("tds2").feature("init1").setIndex("c0", "0", 0);
+    // Default species becomes c2 when tds already uses c.
 
     model.component("comp1").physics("tds2").create("nflx_c0", "NoFlux", 1);
     model.component("comp1").physics("tds2").feature("nflx_c0").selection().named("bnd_cell_ends");
@@ -452,14 +443,11 @@ public class {class_name} {{
     model.component("comp1").physics("tds3").label("TDS - IS in dialysate");
     model.component("comp1").physics("tds3").selection().named("dom_dial");
     model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
-    model.component("comp1").physics("tds3").field("concentration").field("isd");
-    model.component("comp1").physics("tds3").field("concentration").component(new String[]{{"isd"}});
-    model.component("comp1").physics("tds3").feature("init1").setIndex("c0", "0", 0);
+    // Default species becomes c3.
 
     model.component("comp1").physics("tds3").create("conc_d", "Concentration", 1);
-    model.component("comp1").physics("tds3").feature("conc_d").label("Dialysate inlet c=0");
+    model.component("comp1").physics("tds3").feature("conc_d").label("Dialysate inlet -> leave 0");
     model.component("comp1").physics("tds3").feature("conc_d").selection().named("bnd_dial_in");
-    model.component("comp1").physics("tds3").feature("conc_d").setIndex("c0", "0", 0);
 
     model.component("comp1").physics("tds3").create("outfl_d", "Outflow", 1);
     model.component("comp1").physics("tds3").feature("outfl_d").selection().named("bnd_dial_out");
@@ -469,33 +457,28 @@ public class {class_name} {{
   }}
 
   private static void oat1AndApicalCoupling(Model model) {{
-    // Equal-and-opposite fluxes: solute that leaves one field enters the other.
-    // N0 is INWARD flux into the physics selection (COMSOL convention).
-    // Pair 1 - OAT1 at membrane-cell. Positive J_OAT1: membrane -> cell.
+    // Equal-and-opposite Flux features (selections only).
+    // COMSOL 6.4: do NOT setIndex N0 here if it throws — set inward flux in GUI to
+    //   oat1_mem: -J_OAT1 ; oat1_cell: J_OAT1 ; ap_cell: -J_apical ; ap_dial: J_apical
     model.component("comp1").physics("tds").create("oat1_mem", "Fluxes", 1);
     model.component("comp1").physics("tds").feature("oat1_mem")
-        .label("OAT1: outward from membrane");
+        .label("OAT1: outward from membrane (N0=-J_OAT1)");
     model.component("comp1").physics("tds").feature("oat1_mem").selection().named("bnd_mc");
-    model.component("comp1").physics("tds").feature("oat1_mem").setIndex("N0", "-J_OAT1", 0);
 
     model.component("comp1").physics("tds2").create("oat1_cell", "Fluxes", 1);
     model.component("comp1").physics("tds2").feature("oat1_cell")
-        .label("OAT1: inward to cell");
+        .label("OAT1: inward to cell (N0=J_OAT1)");
     model.component("comp1").physics("tds2").feature("oat1_cell").selection().named("bnd_mc");
-    model.component("comp1").physics("tds2").feature("oat1_cell").setIndex("N0", "J_OAT1", 0);
 
-    // Pair 2 - apical at cell-dialysate. Positive J_apical: cell -> dialysate.
     model.component("comp1").physics("tds2").create("ap_cell", "Fluxes", 1);
     model.component("comp1").physics("tds2").feature("ap_cell")
-        .label("Apical: outward from cell");
+        .label("Apical: outward from cell (N0=-J_apical)");
     model.component("comp1").physics("tds2").feature("ap_cell").selection().named("bnd_cd");
-    model.component("comp1").physics("tds2").feature("ap_cell").setIndex("N0", "-J_apical", 0);
 
     model.component("comp1").physics("tds3").create("ap_dial", "Fluxes", 1);
     model.component("comp1").physics("tds3").feature("ap_dial")
-        .label("Apical: inward to dialysate");
+        .label("Apical: inward to dialysate (N0=J_apical)");
     model.component("comp1").physics("tds3").feature("ap_dial").selection().named("bnd_cd");
-    model.component("comp1").physics("tds3").feature("ap_dial").setIndex("N0", "J_apical", 0);
   }}
 
 
@@ -555,7 +538,7 @@ public class {class_name} {{
 
   private static void results(Model model) {{
     // Line integrals of 2*pi*r*J give molar flow [mol/s] on an axisymmetric cut.
-    intLine(model, "int_bm", "Molar flow blood-membrane", "bnd_bm", "2*pi*r*tds.ndflux_is");
+    intLine(model, "int_bm", "Molar flow blood-membrane", "bnd_bm", "2*pi*r*tds.ndflux_c");
     intLine(model, "int_oat1", "Molar flow OAT1 (use J_OAT1, sign-independent of ndflux)",
         "bnd_mc", "2*pi*r*J_OAT1");
     intLine(model, "int_cd", "Molar flow apical", "bnd_cd", "2*pi*r*J_apical");
@@ -571,14 +554,14 @@ public class {class_name} {{
     model.result().numerical("int_cd").set("table", "tbl_cd");
 
     model.result().create("pg_is", "PlotGroup2D");
-    model.result("pg_is").label("IS blood+membrane (is)");
+    model.result("pg_is").label("IS blood+membrane (c)");
     model.result("pg_is").create("surf1", "Surface");
-    model.result("pg_is").feature("surf1").set("expr", "is");
+    model.result("pg_is").feature("surf1").set("expr", "c");
 
     model.result().create("pg_isc", "PlotGroup2D");
-    model.result("pg_isc").label("IS cell (isc) - must be >0 after a few minutes");
+    model.result("pg_isc").label("IS cell (c2) - must be >0 after a few minutes");
     model.result("pg_isc").create("surf2", "Surface");
-    model.result("pg_isc").feature("surf2").set("expr", "isc");
+    model.result("pg_isc").feature("surf2").set("expr", "c2");
   }}
 
   private static void intLine(Model model, String tag, String label, String sel, String expr) {{
