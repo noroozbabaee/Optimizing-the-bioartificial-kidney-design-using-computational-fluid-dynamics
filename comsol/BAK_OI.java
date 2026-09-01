@@ -380,10 +380,12 @@ public class BAK_OI {
   private static void mesh(Model model) {
     model.component("comp1").mesh("mesh1").label("Mapped quads");
     model.component("comp1").mesh("mesh1").create("map1", "Map");
+    model.component("comp1").mesh("mesh1").feature("map1").selection().geom("geom1", 2);
     model.component("comp1").mesh("mesh1").feature("map1").selection().all();
     model.component("comp1").mesh("mesh1").feature("map1").create("dis_z", "Distribution");
     model.component("comp1").mesh("mesh1").feature("map1").feature("dis_z").set("numelem", 80);
     model.component("comp1").mesh("mesh1").create("size1", "Size");
+    model.component("comp1").mesh("mesh1").feature("size1").selection().geom("geom1", 2);
     model.component("comp1").mesh("mesh1").feature("size1").selection().named("dom_cell");
     model.component("comp1").mesh("mesh1").feature("size1").set("custom", "on");
     model.component("comp1").mesh("mesh1").feature("size1").set("hmax", "0.005[mm]");
