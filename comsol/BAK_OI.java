@@ -5,6 +5,7 @@
  *
  * COMSOL 6.4 API NOTES (do not reintroduce these)
  * -----------------------------------------------
+ *   NEVER .set("is"/"isc"/"isd", ...) on init/Concentration — use setIndex("c0", ..., 0)
  *   NEVER setIndex("D_c"/"Dc", ...)
  *   NEVER create(..., "ConvectionDiffusion", ...)  (unknown feature ID)
  *   NEVER create ReactingFlowDilutedSpecies via API
@@ -299,12 +300,13 @@ public class BAK_OI {
     // Do NOT create an extra membrane Fluid/ConvectionDiffusion domain feature via API.
     model.component("comp1").physics("tds").feature("cdm1").label("Blood+membrane Fluid (default)");
 
-    model.component("comp1").physics("tds").feature("init1").set("is", "C_in");
+    // COMSOL 6.4: init/Concentration use property c0 — NOT .set("is", ...).
+    model.component("comp1").physics("tds").feature("init1").setIndex("c0", "C_in", 0);
 
     model.component("comp1").physics("tds").create("conc_b", "Concentration", 1);
     model.component("comp1").physics("tds").feature("conc_b").label("Blood inlet c=C_in");
     model.component("comp1").physics("tds").feature("conc_b").selection().named("bnd_blood_in");
-    model.component("comp1").physics("tds").feature("conc_b").set("is", "C_in");
+    model.component("comp1").physics("tds").feature("conc_b").setIndex("c0", "C_in", 0);
 
     model.component("comp1").physics("tds").create("outfl_b", "Outflow", 1);
     model.component("comp1").physics("tds").feature("outfl_b").label("Blood outflow");
@@ -323,7 +325,7 @@ public class BAK_OI {
     model.component("comp1").physics("tds2").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds2").field("concentration").field("isc");
     model.component("comp1").physics("tds2").field("concentration").component(new String[]{"isc"});
-    model.component("comp1").physics("tds2").feature("init1").set("isc", "0");
+    model.component("comp1").physics("tds2").feature("init1").setIndex("c0", "0", 0);
 
     model.component("comp1").physics("tds2").create("nflx_c0", "NoFlux", 1);
     model.component("comp1").physics("tds2").feature("nflx_c0").selection().named("bnd_cell_ends");
@@ -338,12 +340,12 @@ public class BAK_OI {
     model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
     model.component("comp1").physics("tds3").field("concentration").field("isd");
     model.component("comp1").physics("tds3").field("concentration").component(new String[]{"isd"});
-    model.component("comp1").physics("tds3").feature("init1").set("isd", "0");
+    model.component("comp1").physics("tds3").feature("init1").setIndex("c0", "0", 0);
 
     model.component("comp1").physics("tds3").create("conc_d", "Concentration", 1);
     model.component("comp1").physics("tds3").feature("conc_d").label("Dialysate inlet c=0");
     model.component("comp1").physics("tds3").feature("conc_d").selection().named("bnd_dial_in");
-    model.component("comp1").physics("tds3").feature("conc_d").set("isd", "0");
+    model.component("comp1").physics("tds3").feature("conc_d").setIndex("c0", "0", 0);
 
     model.component("comp1").physics("tds3").create("outfl_d", "Outflow", 1);
     model.component("comp1").physics("tds3").feature("outfl_d").selection().named("bnd_dial_out");
