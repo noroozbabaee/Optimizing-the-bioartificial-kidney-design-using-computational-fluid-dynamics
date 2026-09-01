@@ -48,8 +48,13 @@ Do NOT open RM_06_....mph (damaged / unrelated).
 Do NOT open empty BAK_IO_mph.mph with only Parameters.
 
 Known bad API names (already removed from these .java files):
-  D_c, minput_velocity_src, FluidFlow, DilutedSpecies
-Correct diffusivity property on 6.4:  Dc
+  D_c, Dc, minput_velocity_src, FluidFlow, DilutedSpecies
+
+After open, set diffusivity in GUI (Parameters D_is / D_mem already exist):
+  TDS blood+membrane -> Fluid (blood) -> Diffusion -> User defined -> D_is
+  TDS blood+membrane -> Membrane diffusion -> Diffusion -> User defined -> D_mem
+  TDS cell -> Fluid -> Diffusion -> User defined -> D_is
+  TDS dialysate -> Fluid -> Diffusion -> User defined -> D_is
 
 STEP E - Then OI models
 -----------------------
