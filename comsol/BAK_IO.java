@@ -6,12 +6,15 @@
  * COMSOL 6.4 API NOTES (do not reintroduce these)
  * -----------------------------------------------
  *   NEVER set init/Concentration values via API (.set is/isc/isd OR setIndex c0)
- *   NEVER setIndex("N0", ...) on Fluxes if unknown — set flux in GUI
+ *   NEVER setIndex("N0", ...) on Fluxes
  *   NEVER setIndex("D_c"/"Dc", ...)
  *   NEVER create(..., "ConvectionDiffusion", ...)  (unknown feature ID)
  *   NEVER create ReactingFlowDilutedSpecies via API
  *   NEVER set("minput_velocity_src", ...)
  *   NEVER set("FluidFlow"/"DilutedSpecies") on multiphysics
+ *   NEVER touch feature("cdm1") / prop("ShapeProperty") (tag/property may not exist)
+ *   Selections MUST set entitydim (else: "No entity dimension specified")
+ *   File must stay pure ASCII (Windows comsolcompile encoding)
  *   main() = run() only
  *   After open (GUI): C_in on blood inlet; D_is/D_mem; Flux N0; Reacting Flow couples
  *
@@ -172,9 +175,9 @@ public class BAK_IO {
     explicitDomain(model, "dom_dial", "Dialysate domain", 4);
 
     model.component("comp1").selection().create("dom_blood_mem", "Explicit");
-    model.component("comp1").selection("dom_blood_mem").label("Blood + membrane (field is)");
-    model.component("comp1").selection("dom_blood_mem").geom("geom1", 2);
-    model.component("comp1").selection("dom_blood_mem").set(1, 2);
+    model.component("comp1").selection("dom_blood_mem").label("Blood + membrane");
+    model.component("comp1").selection("dom_blood_mem").set("entitydim", 2);
+    model.component("comp1").selection("dom_blood_mem").set(new int[]{1, 2});
 
     boxEdge(model, "bnd_blood_in", "Blood inlet z=0", -0.00100, 0.15100, -0.02000, 0.02000);
 
@@ -206,16 +209,17 @@ public class BAK_IO {
   private static void explicitDomain(Model model, String tag, String label, int id) {
     model.component("comp1").selection().create(tag, "Explicit");
     model.component("comp1").selection(tag).label(label);
-    model.component("comp1").selection(tag).geom("geom1", 2);
-    model.component("comp1").selection(tag).set(id);
+    model.component("comp1").selection(tag).set("entitydim", 2);
+    model.component("comp1").selection(tag).set(new int[]{id});
   }
 
   private static void boxEdge(
       Model model, String tag, String label,
       double xmin, double xmax, double ymin, double ymax) {
+    // entitydim=1 (edges). Missing it gives "No entity dimension specified".
     model.component("comp1").selection().create(tag, "Box");
     model.component("comp1").selection(tag).label(label);
-    model.component("comp1").selection(tag).geom("geom1", 1);
+    model.component("comp1").selection(tag).set("entitydim", 1);
     model.component("comp1").selection(tag).set("xmin", xmin);
     model.component("comp1").selection(tag).set("xmax", xmax);
     model.component("comp1").selection(tag).set("ymin", ymin);
@@ -257,7 +261,6 @@ public class BAK_IO {
     model.component("comp1").physics().create("spf", "LaminarFlow", "geom1");
     model.component("comp1").physics("spf").label("Laminar Flow - blood");
     model.component("comp1").physics("spf").selection().named("dom_blood");
-    model.component("comp1").physics("spf").prop("ShapeProperty").set("order_fluid", 1);
 
     model.component("comp1").physics("spf").create("inl_b", "Inlet", 1);
     model.component("comp1").physics("spf").feature("inl_b").label("Blood inlet");
@@ -275,7 +278,6 @@ public class BAK_IO {
     model.component("comp1").physics().create("spf2", "LaminarFlow", "geom1");
     model.component("comp1").physics("spf2").label("Laminar Flow - dialysate, countercurrent");
     model.component("comp1").physics("spf2").selection().named("dom_dial");
-    model.component("comp1").physics("spf2").prop("ShapeProperty").set("order_fluid", 1);
 
     model.component("comp1").physics("spf2").create("inl_d", "Inlet", 1);
     model.component("comp1").physics("spf2").feature("inl_d").label("Dialysate inlet z=L");
@@ -292,10 +294,7 @@ public class BAK_IO {
     model.component("comp1").physics().create("tds", "DilutedSpecies", "geom1");
     model.component("comp1").physics("tds").label("TDS - IS in blood + membrane");
     model.component("comp1").physics("tds").selection().named("dom_blood_mem");
-    model.component("comp1").physics("tds").prop("ShapeProperty").set("order_concentration", 2);
-    // Keep default species name c (do not rename; do not set init/c0 — both unknown on 6.4).
-    // After open: Concentration "Blood inlet" -> set value C_in; Fluid -> D_is.
-    model.component("comp1").physics("tds").feature("cdm1").label("Blood+membrane Fluid (default)");
+    // Species keeps the COMSOL default name c. Set D and inlet value in the GUI.
 
     model.component("comp1").physics("tds").create("conc_b", "Concentration", 1);
     model.component("comp1").physics("tds").feature("conc_b").label("Blood inlet -> set to C_in in GUI");
@@ -315,7 +314,6 @@ public class BAK_IO {
     model.component("comp1").physics().create("tds2", "DilutedSpecies", "geom1");
     model.component("comp1").physics("tds2").label("TDS - IS in cell (no volume MM)");
     model.component("comp1").physics("tds2").selection().named("dom_cell");
-    model.component("comp1").physics("tds2").prop("ShapeProperty").set("order_concentration", 2);
     // Default species becomes c2 when tds already uses c.
 
     model.component("comp1").physics("tds2").create("nflx_c0", "NoFlux", 1);
@@ -328,7 +326,6 @@ public class BAK_IO {
     model.component("comp1").physics().create("tds3", "DilutedSpecies", "geom1");
     model.component("comp1").physics("tds3").label("TDS - IS in dialysate");
     model.component("comp1").physics("tds3").selection().named("dom_dial");
-    model.component("comp1").physics("tds3").prop("ShapeProperty").set("order_concentration", 2);
     // Default species becomes c3.
 
     model.component("comp1").physics("tds3").create("conc_d", "Concentration", 1);
@@ -344,7 +341,7 @@ public class BAK_IO {
 
   private static void oat1AndApicalCoupling(Model model) {
     // Equal-and-opposite Flux features (selections only).
-    // COMSOL 6.4: do NOT setIndex N0 here if it throws — set inward flux in GUI to
+    // COMSOL 6.4: do NOT setIndex N0 here. Set inward flux in the GUI to
     //   oat1_mem: -J_OAT1 ; oat1_cell: J_OAT1 ; ap_cell: -J_apical ; ap_dial: J_apical
     model.component("comp1").physics("tds").create("oat1_mem", "Fluxes", 1);
     model.component("comp1").physics("tds").feature("oat1_mem")
@@ -380,7 +377,6 @@ public class BAK_IO {
   private static void mesh(Model model) {
     model.component("comp1").mesh("mesh1").label("Mapped quads");
     model.component("comp1").mesh("mesh1").create("map1", "Map");
-    model.component("comp1").mesh("mesh1").feature("map1").selection().geom("geom1", 2);
     model.component("comp1").mesh("mesh1").feature("map1").selection().all();
     model.component("comp1").mesh("mesh1").feature("map1").create("dis_z", "Distribution");
     model.component("comp1").mesh("mesh1").feature("map1").feature("dis_z").set("numelem", 80);
