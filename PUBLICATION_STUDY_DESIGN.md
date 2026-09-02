@@ -556,6 +556,6 @@ Ordered by dependency, not by calendar time.
    fibre. Do not rebuild a volumetric model for this step.
 7. **Post-process** through `src/comsol_io_oi_comparison.py`, extended to
    produce the resistance partition and design map.
-7. **Implement E3 validation** against whichever experimental comparison is
+8. **Implement E3 validation** against whichever experimental comparison is
    obtainable.
-8. **Draft** in the order Methods, Results, Discussion, Introduction, Abstract.
+9. **Draft** in the order Methods, Results, Discussion, Introduction, Abstract.
