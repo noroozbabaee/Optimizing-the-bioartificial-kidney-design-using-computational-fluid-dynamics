@@ -169,7 +169,9 @@ perfused fibres, and note flow maldistribution as a limitation.
 
 ## 5. Model extensions needed before submission
 
-The current model is sound but three additions materially strengthen it.
+The working model is the **surface-flux, three-field** description in the
+teaching guide (no volumetric sink). Three additions strengthen the paper
+without changing that formulation.
 
 ### E1 - Protein binding (high priority)
 
@@ -392,33 +394,76 @@ predictions to be confirmed by the CFD; large disagreement means a bug.
 
 ## 10. Paper outline
 
-**Title options**
+The paper describes the **model you actually built**: four domains, three
+concentration fields, **surface OAT1 and surface apical fluxes**, no volumetric
+sink in the cell, stationary flow, transient transport, countercurrent
+dialysate, matched IO/OI. The volumetric Michaelis-Menten form is **not** the
+model. It appears only as a literature contrast (S1) so readers can see why
+prior parameterisations were biased.
 
-1. *Membrane resistance, not transporter capacity, limits indoxyl sulfate
-   removal in a bioartificial kidney*
-2. *Surface-resolved OAT1 transport reveals the design bottleneck in
-   bioartificial kidney fibres*
-3. *Fair comparison of inside-out and outside-in bioartificial kidney fibres
-   using a surface-flux transporter model*
+**Title options** (do not lead with "membrane always limits" — that is true only
+at literature-scale `Vmax`, not at the working `Vmax_A`)
 
-Option 1 leads with the finding and is the strongest.
+1. *Surface-flux OAT1 modelling identifies a transporter-to-membrane crossover
+   in bioartificial kidney fibres*
+2. *Where to put the transporter: areal OAT1 kinetics and matched fibre
+   geometries for indoxyl sulfate clearance*
+3. *A three-field surface-transport model of the bioartificial kidney:
+   formulation artefact, bottleneck map, and fair IO/OI comparison*
 
-**Structure**
+Option 1 states the actual claim. Drop any title that treats membrane limitation
+as the sole result.
 
-1. **Introduction** - protein-bound uraemic toxins; BAK concept; prior
-   modelling and its two weaknesses; statement of contribution.
-2. **Methods** - geometry and matched-comparison construction; governing
-   equations; the areal transporter formulation and its relation to volumetric
-   `Vmax`; boundary conditions and sign conventions; numerical implementation;
-   verification.
-3. **Results** - formulation artefact (Fig 2); base case (Fig 3); resistance
-   partitioning and the crossover (Fig 4, 5); geometry comparison (Fig 6);
-   sensitivity and scale-up (Fig 7).
-4. **Discussion** - design implications ranked by leverage; why prior IO/OI
-   comparisons were confounded; why countercurrent operation buys little here;
-   limitations; experimental tests that would falsify the predictions.
-5. **Conclusions** - the crossover threshold and the membrane-limited ceiling as
-   transferable results.
+**Structure — what each section is about**
+
+1. **Introduction**
+   Protein-bound uraemic toxins and the BAK fibre. Two weaknesses in prior
+   CFD: (i) OAT1 written as a volumetric cell sink `R = -Vmax_V c/(Km+c)`,
+   which makes capacity scale with an assumed thickness; (ii) IO vs OI compared
+   at unmatched OAT1 area and blood volume. Contribution: a surface-flux,
+   three-field model and a matched geometric comparison.
+
+2. **Methods — the working model, not the volumetric one**
+   - **Geometry.** Axisymmetric IO: blood | membrane | cell | dialysate.
+     Matched OI: same OAT1 area, same blood volume, same `Q_b` and `Q_d`
+     (housing ~0.381 mm, not the unmatched 1.8 mm).
+   - **Flow.** Laminar NS in blood (`spf`) and dialysate (`spf2`) only.
+     Membrane and cell are stagnant. Stationary solve. Inlet mean velocities
+     from matched flow rates; outlets `p = 0`. No-slip elsewhere, including
+     axis.
+   - **Transport — three fields.** `c` in blood+membrane; `c2` in cell; `c3`
+     in dialysate. Convection only where there is flow (`spf` for `c` in
+     blood, `spf2` for `c3`). Membrane: `u = 0`, `D = D_mem`. Cell: no
+     convection, `D = D_is`. **No volumetric reaction in any domain.**
+   - **Surface fluxes (the biology).** At the membrane–cell interface:
+     reversible OAT1, `J_OAT1 = Vmax_A (c/(Km+c) - c2/(Km+c2))`, equal and
+     opposite on `tds` and `tds2`. At the cell–dialysate interface:
+     irreversible apical, `J_apical = Vmax_ap c2/(Km_ap+c2)` with
+     `Vmax_ap = 10 Vmax_A`, equal and opposite on `tds2` and `tds3`.
+     Blood–membrane interface: continuity, no Flux node.
+   - **Study.** Stationary flow, then transient transport to 60 min.
+   - **Literature contrast only (S1, not the model).** Repeat one sweep with
+     a volumetric sink `R = -Vmax_V c2/(Km+c2)` inside the cell and no
+     surface OAT1, to show the thickness artefact. Conversion
+     `Vmax_A = Vmax_V * d_cell` is a **comparison note**, not how the
+     production model is parameterised.
+   - Verification as in Section 6.
+
+3. **Results**
+   Formulation artefact (Fig 2); working-model base case (Fig 3); resistance
+   partition and `Vmax_A`–`D_mem` map (Fig 4, 5); matched vs unmatched
+   geometry (Fig 6); sensitivity and scale-up (Fig 7).
+
+4. **Discussion**
+   At working `Vmax_A` the bottleneck is OAT1; at literature-equivalent
+   `Vmax` it is the membrane. The crossover is the transferable result.
+   Unmatched OI was a housing artefact. Countercurrent buys little when the
+   membrane/OAT1 path dominates. Limitations. Falsifying experiments.
+
+5. **Conclusions**
+   Model the transporter on the membrane surface. Report the crossover
+   `Vmax_A` and the membrane-limited ceiling. Compare geometries only when
+   OAT1 area and blood volume are matched.
 
 **Data and code availability.** Deposit the `.mph` files, the parameter tables,
 and the post-processing scripts. This repository is already structured for that
