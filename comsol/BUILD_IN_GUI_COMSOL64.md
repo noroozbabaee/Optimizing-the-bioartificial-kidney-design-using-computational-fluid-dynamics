@@ -202,6 +202,10 @@ zero. If it falls or goes negative, flip **both** OAT1 flux signs together
 
 ## 10. The other two geometries
 
+**Next model after a working IO file:** follow the full click-path, tables, and
+domain map in [`BUILD_OI_FAIR_GUI_COMSOL64.md`](BUILD_OI_FAIR_GUI_COMSOL64.md).
+Do not only edit radii on the IO rectangles — the layer order reverses.
+
 Save as `BAK_IO.mph` first. Then change only these parameters and save under a
 new name. Everything else stays identical — that is what makes the comparison
 fair.
