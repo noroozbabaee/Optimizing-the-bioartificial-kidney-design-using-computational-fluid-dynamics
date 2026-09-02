@@ -55,6 +55,15 @@ threshold, not an absolute clearance number, is the transferable design result.
 IO/OI performance difference is far smaller than the unmatched comparison
 suggests; most of the apparent advantage in previous work is a size effect.
 
+**C5.** An improved fibre, designed from the resistance map and simulated with
+the **same surface-flux model**, raises clearance by pulling the lever that
+actually dominates at the working `Vmax_A` — not by returning to volumetric
+kinetics or to the unmatched 1.8 mm housing.
+
+The production model for every result except S1 is the corrected formulation.
+S1 is a contrast experiment only. The improved design is a **consequence** of
+the map, not a second physics.
+
 ---
 
 ## 2. Target journals
@@ -83,6 +92,7 @@ with it. A geometry comparison alone (C4) is a weaker paper.
 | RQ4 | Does IO vs OI matter once matched? | Difference shrinks substantially under matched conditions | S4 |
 | RQ5 | Which operating parameter is worth optimising? | Blood flow and membrane properties outrank dialysate flow | S5 |
 | RQ6 | What device size reaches a clinically relevant clearance? | Fibre count scales linearly with the per-fibre ceiling | S7 |
+| RQ7 | Can the map be used to design a better fibre? | Changing the dominant resistance raises clearance; changing a non-dominant one does not | S8 |
 
 ---
 
@@ -164,6 +174,34 @@ pre-empts an obvious reviewer question.
 Convert per-fibre clearance to cartridge clearance for realistic fibre counts
 and packing densities. State explicitly the assumption of identical, uniformly
 perfused fibres, and note flow maldistribution as a limitation.
+
+### S8 - Improved fibre from the map (supports C5)
+
+Do **not** re-optimise the old volumetric model and then re-label it. Do **not**
+treat unmatched OI (`R_house = 1.8 mm`) as an improved design: that is more
+area, not a better arrangement.
+
+Keep the surface-flux, three-field physics fixed. Propose **one** improved IO
+fibre (and, if S4 is done, the same changes on matched OI) using only the
+levers the map says to pull at the working point `Vmax_A = 1e-7`:
+
+| Variant | What changes | Why |
+|---|---|---|
+| Baseline | working IO (and matched OI) | reference |
+| Biology lever | raise `Vmax_A` to the crossover `~3e-7` | OAT1 is ~66% of resistance there |
+| Membrane lever | thinner or more permeable membrane (e.g. `d_mem` halved **or** `D_mem` doubled), `Vmax_A` held at baseline | shows the *wrong* lever at this operating point: little gain |
+| Combined (the “improved” candidate) | crossover `Vmax_A` **and** a manufacturable membrane step (thinner wall or higher `eps_mem`) | demonstrates stacked, map-guided improvement |
+| Negative control | raise `Q_d` only | expected near-zero gain; proves the map is not just “change everything” |
+
+Report absolute clearance, area-normalised clearance, and the resistance
+partition before/after. The story is: **the formulation tells you where to
+invest; the improved fibre is that investment, simulated with the same
+equations.**
+
+If a true shape optimisation is wanted later (housing radius, cell thickness,
+packing), it belongs after S8, with explicit manufacturing constraints, still
+on the surface-flux model. Do not open a COMSOL Optimization study until S2–S3
+exist; otherwise the optimiser will chase mesh and parameter artefacts.
 
 ---
 
@@ -301,6 +339,12 @@ advantage is a size effect.*
 **(b)** Cartridge clearance versus fibre count, with the per-fibre membrane-limited
 ceiling as a horizontal asymptote and a clinically motivated target line.
 *Job: tells the reader what to change and how big the device must be.*
+
+### Figure 8 - Map-guided improved fibre (claim C5)
+Before/after resistance bars and clearance for baseline, biology lever,
+membrane lever, combined candidate, and `Q_d` negative control. Optional second
+panel: the same candidate on matched OI. *Job: shows that the corrected model
+is used for design, not only for criticising the old formulation.*
 
 ### Supplementary figures
 
@@ -452,7 +496,9 @@ as the sole result.
 3. **Results**
    Formulation artefact (Fig 2); working-model base case (Fig 3); resistance
    partition and `Vmax_A`–`D_mem` map (Fig 4, 5); matched vs unmatched
-   geometry (Fig 6); sensitivity and scale-up (Fig 7).
+   geometry (Fig 6); sensitivity and scale-up (Fig 7); map-guided improved
+   fibre (Fig 8). Every production panel except Fig 2 uses the surface-flux
+   model. Fig 8 is the design improvement, not a return to volumetric kinetics.
 
 4. **Discussion**
    At working `Vmax_A` the bottleneck is OAT1; at literature-equivalent
@@ -506,7 +552,9 @@ Ordered by dependency, not by calendar time.
    redrawing the rectangle order; run S4.
 5. **Run S5, S6, S7** for the sensitivity, flow configuration and scale-up
    panels.
-6. **Post-process** through `src/comsol_io_oi_comparison.py`, extended to
+6. **Run S8** on the same `.mph` physics: baseline vs map-guided improved
+   fibre. Do not rebuild a volumetric model for this step.
+7. **Post-process** through `src/comsol_io_oi_comparison.py`, extended to
    produce the resistance partition and design map.
 7. **Implement E3 validation** against whichever experimental comparison is
    obtainable.
