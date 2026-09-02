@@ -1,16 +1,13 @@
 # COMSOL models (surface OAT1)
 
-**COMSOL 6.4 on university PC:** read [`OPEN_ON_COMSOL64.txt`](OPEN_ON_COMSOL64.txt) and run [`compile_models.bat`](compile_models.bat).
+**Build in the GUI** (COMSOL 6.4). Do not start from the `.java` files.
+
+| Guide | What to build |
+|---|---|
+| [`BUILD_IN_GUI_COMSOL64.md`](BUILD_IN_GUI_COMSOL64.md) | Inside-out `BAK_IO.mph` (first model) |
+| [`BUILD_OI_FAIR_GUI_COMSOL64.md`](BUILD_OI_FAIR_GUI_COMSOL64.md) | **Next:** fair outside-in `BAK_OI_fair.mph` (tables, dimensions, domain map) |
+| [`TEACHING_GUIDE_BAK_SURFACE_OAT1.md`](TEACHING_GUIDE_BAK_SURFACE_OAT1.md) | Physics, signs, verification |
+
+Java files in this folder are leftover and are not the supported route.
 
 **Full student guide:** [`../SURFACE_OAT1_PIPELINE_README.md`](../SURFACE_OAT1_PIPELINE_README.md)
-
-| File | Role |
-|---|---|
-| `BAK_IO.java` | Inside-out reference (compile to `BAK_IO.class`) |
-| `BAK_OI.java` | Thesis outside-in control |
-| `BAK_OI_fair.java` | Fair outside-in (matched OAT1 area + blood volume) |
-| `compile_models.bat` | Windows: creates the `.class` files for File > Open |
-| `OPEN_ON_COMSOL64.txt` | Exact clicks for COMSOL 6.4 |
-| `apply_oat1_surface_flux.java` | Optional patch for an old `.mph` |
-
-Physics: one polymer membrane; no volumetric MM; fields `is` / `isc` / `isd`; reversible OAT1; apical efflux; same Q_b, Q_d, C_in.
