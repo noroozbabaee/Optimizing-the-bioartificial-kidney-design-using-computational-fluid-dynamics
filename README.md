@@ -11,6 +11,11 @@
 
 ¹ Ghent University  
 ² Maastricht University
+
+> **Student / pipeline guide (equations, parameters, diagnosed issues, COMSOL steps):**  
+> **[`SURFACE_OAT1_PIPELINE_README.md`](SURFACE_OAT1_PIPELINE_README.md)**  
+> Short university COMSOL run card: [`comsol/RUN_ON_UNIVERSITY_COMSOL.md`](comsol/RUN_ON_UNIVERSITY_COMSOL.md)
+
 ## Project Overview
 
 This project investigates the transport and clearance of the protein-bound uremic toxin (PBUT) indoxyl sulfate (IS) in bioartificial kidney hollow-fiber systems using computational fluid dynamics (CFD) simulations in COMSOL Multiphysics.
@@ -210,6 +215,30 @@ Additional simulations were performed with varying $V_{\max}$ values to evaluate
 
 A split cell-layer model was also investigated to distinguish between basolateral and apical transport behavior.
 
+## Surface OAT1 formulation and fair IO vs OI
+
+The original cell-domain Michaelis–Menten term smears OAT1 through the full epithelial thickness. The corrected models keep the polymer membrane as **one diffusion domain** and move active transport to **surfaces**:
+
+1. No volumetric reaction in the cell.
+2. Reversible OAT1 at the **membrane–cell** face (separate concentrations `is` and `isc`).
+3. Apical efflux at the **cell–dialysate** face.
+
+**Run these on university COMSOL** (File → Open the Java file). Step-by-step: `comsol/RUN_ON_UNIVERSITY_COMSOL.md`.
+
+| Java model | Role |
+|---|---|
+| `comsol/BAK_IO_OAT1_SurfaceFlux.java` | Inside-out reference |
+| `comsol/BAK_OI_OAT1_SurfaceFlux.java` | Thesis outside-in (control, unfair) |
+| `comsol/BAK_OI_fair_OAT1_SurfaceFlux.java` | Fair outside-in: same OAT1 area and blood volume as IO |
+
+Export flux tables into `data/comsol_surface_oat1/<IO|OI_original|OI_fair>/`, then:
+
+```text
+python3 src/comsol_io_oi_comparison.py
+```
+
+Geometry equations live in `src/bak_geometries.py`. A 1D radial diagnostic (IO only, not the fair comparison) is still `python3 src/oat1_surface_flux_model.py`.
+
 ---
 
 # Numerical Implementation
@@ -350,6 +379,9 @@ https://ugentbe-my.sharepoint.com/:u:/r/personal/floriene_holvoet_ugent_be/Docum
 | `Figure 9.23` | Michaelis-Menten contribution ratio for `Vmax = 10^9` | `src/MM_transport_contribution.py` |
 | `Figure 9.25` | Total multifiber clearance under countercurrent conditions | `src/multifiber_clearance.py` |
 | `Figure 9.26` | Individual fiber clearance in multifiber configurations | `src/multifiber_clearance.py` |
+| Surface OAT1 | 1D radial diagnostic (IO only) | `src/oat1_surface_flux_model.py` |
+| Surface OAT1 | Journal figures from 1D tables | `src/paper_figures_oat1.py` |
+| IO vs OI | COMSOL export comparison (fair pair) | `src/comsol_io_oi_comparison.py` |
 
 
 ## Software

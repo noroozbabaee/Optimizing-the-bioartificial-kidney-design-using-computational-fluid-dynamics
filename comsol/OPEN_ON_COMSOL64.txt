@@ -1,0 +1,62 @@
+COMSOL 6.4 on the university PC - open these models
+====================================================
+
+Your Open dialog does NOT list *.java. It lists *.class.
+So you must COMPILE first, then open the .class file.
+
+IMPORTANT: use the LATEST .java from git (Desktop\BAK copies go stale).
+Replace ALL three .java files, delete old .class, then recompile.
+
+STEP A - Put these 4 files in a SHORT folder (e.g. Desktop\BAK)
+----------------------------------------------------------------------
+  BAK_IO.java
+  BAK_OI.java
+  BAK_OI_fair.java
+  compile_models.bat
+
+STEP B - Compile (creates .class)
+---------------------------------
+Double-click compile_models.bat
+
+You must see BAK_IO.class (and the other two) appear.
+
+If the bat says comsolcompile not found, set the full path, usually:
+  C:\Program Files\COMSOL\COMSOL64\Multiphysics\bin\win64\comsolcompile.exe
+
+STEP C - Open in COMSOL 6.4
+---------------------------
+1. File -> Open
+2. File type:  Compiled Model File for Java (*.class)
+3. Open:       BAK_IO.class
+4. Success = Model Builder shows Component 1 + Geometry + Physics + Mesh + Studies
+5. File -> Save As -> BAK_IO.mph
+
+STEP D - After open (once)
+--------------------------
+1. Under Multiphysics, open "Flow-transport blood":
+     Fluid flow = Laminar Flow - blood
+     Species transport = TDS - IS in blood + membrane
+2. Open "Flow-transport dialysate":
+     Fluid flow = Laminar Flow - dialysate
+     Species transport = TDS - IS in dialysate
+3. (Usually already correct when only one pair intersects the domain.)
+4. Right-click Mesh -> Build All
+5. Study 1 -> Compute
+6. Plot isc: must RISE after a few minutes
+
+Do NOT open RM_06_....mph (damaged / unrelated).
+Do NOT open empty BAK_IO_mph.mph with only Parameters.
+
+Known bad API names (already removed from these .java files):
+  D_c, Dc, minput_velocity_src, FluidFlow, DilutedSpecies
+
+After open, set diffusivity in GUI (Parameters D_is / D_mem already exist):
+  TDS blood+membrane -> Fluid (blood) -> Diffusion -> User defined -> D_is
+  TDS blood+membrane -> Membrane diffusion -> Diffusion -> User defined -> D_mem
+  TDS cell -> Fluid -> Diffusion -> User defined -> D_is
+  TDS dialysate -> Fluid -> Diffusion -> User defined -> D_is
+
+STEP E - Then OI models
+-----------------------
+Same: open BAK_OI.class and BAK_OI_fair.class after compile,
+same Vmax_A / Q_b / Q_d / C_in, then export flux tables.

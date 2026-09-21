@@ -1,0 +1,13 @@
+Fig. 1. Inside-out hollow-fiber geometry used for the surface-OAT1 formulation. The polymer membrane is a single diffusion domain. Organic anion transporter 1 (OAT1) is imposed as an areal Michaelis–Menten flux at the membrane–cell (basolateral) interface. Apical efflux is imposed at the cell–dialysate interface. There is no volumetric reaction in the cell layer.
+
+Fig. 2. Area-normalized clearance as a function of OAT1 areal capacity Vmax^A for three apical-to-basolateral capacity ratios. The vertical dashed line marks the areal equivalent of the original volumetric Vmax = 10^6 umol L^{-1} min^{-1} distributed over a 20 um cell layer. Clearance rises with Vmax^A only at low transporter capacity and saturates once membrane diffusion limits transport.
+
+Fig. 3. Steady interfacial fluxes versus Vmax^A when apical efflux is not limiting (Vmax^ap = 10 Vmax^A). Blood–membrane, OAT1, and apical fluxes coincide at steady state. Dotted lines show the OAT1 capacity Vmax^A and the membrane capacity Pm Cin. The operating flux follows the lower of the two capacities.
+
+Fig. 4. Clearance versus Damkohler number Da = Vmax^A / (Pm Cin). Green: OAT1-limited regime (Da << 1). Orange: membrane-limited regime (Da >> 1). The original volumetric parameterization lies deep in the membrane-limited regime.
+
+Fig. 5. Clearance map versus OAT1 capacity and membrane porosity. The white contour is Da = 1. The dashed line is the thesis porosity epsilon = 0.45. Increasing Vmax^A at fixed epsilon does not increase clearance once Da > 1.
+
+Fig. 6. Ratio of the realized flux to each step's capacity. Values approaching 1 identify the rate-limiting step. At low Vmax^A the OAT1 ratio is high (transporter-limited); at high Vmax^A the membrane ratio approaches 1 (diffusion-limited).
+
+Fig. main. Combined paper figure: (a) clearance versus Vmax^A, (b) OAT1 flux compared with membrane and transporter capacities, (c) Damkohler diagnostic, (d) clearance map with Da = 1.

@@ -1,0 +1,16 @@
+sweep_*.csv columns
+  Vmax_A_mol_m2_s              OAT1 areal capacity
+  Vmax_ap_mol_m2_s             apical areal capacity
+  apical_ratio                 Vmax_ap / Vmax_A
+  Da                           Vmax_A / (P_m * C_in)
+  clearance_uL_min_cm2         area-normalized clearance at OAT1 surface
+  J_BM_mol_m2_s                flux at blood-membrane interface
+  J_OAT1_mol_m2_s              flux at membrane-cell (OAT1) interface
+  J_CD_mol_m2_s                flux at cell-dialysate (apical) interface
+  c_*_mol_m3                   interface concentrations
+  J_*_capacity_mol_m2_s        capacity of that step
+  bottleneck                   classified limiting step
+
+map_clearance_tidy.csv         one row per (Vmax_A, epsilon)
+parameters.json                geometry and transport constants
+comsol/*.csv                   cleaned COMSOL time-flux tables

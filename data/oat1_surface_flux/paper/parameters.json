@@ -1,0 +1,22 @@
+{
+  "created_utc": "2026-08-31T06:03:36Z",
+  "geometry": {
+    "configuration": "inside-out",
+    "R_blood_membrane_m": 0.00015,
+    "R_membrane_cell_m": 0.00025,
+    "R_cell_dialysate_m": 0.00027,
+    "cell_thickness_m": 1.9999999999999998e-05
+  },
+  "transport": {
+    "D_IS_m2_s": 5.58e-10,
+    "D_cell_m2_s": 5.58e-10,
+    "eps_membrane": 0.45,
+    "D_membrane_m2_s": 2.5110000000000004e-10,
+    "P_membrane_m_s": 1.966228695802691e-06,
+    "C_in_mol_m3": 0.1,
+    "Km_OAT1_mol_m3": 0.02,
+    "Km_apical_mol_m3": 0.02,
+    "Vmax_A_volumetric_equivalent_mol_m2_s": 0.0003333333333333333
+  },
+  "notes": "OAT1 is an areal flux at the membrane-cell interface. Apical efflux is an areal flux at the cell-dialysate interface. The polymer membrane is a single diffusion domain."
+}
